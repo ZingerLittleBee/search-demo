@@ -1,4 +1,5 @@
 mod state;
+mod ai;
 
 use crate::state::AppState;
 use axum::response::Html;
