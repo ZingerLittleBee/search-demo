@@ -1,0 +1,9 @@
+services:
+  surrealdb:
+    container_name: muse-surrealdb
+    image: surrealdb/surrealdb:latest
+    command: start --auth --user root --pass root --log trace file:/mydata/mydatabase.db
+    volumes:
+      - ./mydata:/mydata/mydatabase.db
+    ports:
+      - "8000:8000"
