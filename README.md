@@ -14,5 +14,5 @@ docker-compose up -d
 ### 启动 embed server
 ```shell
 pip install -r embed-server/requirements.txt
-cd embed-server && python -m uvicorn main:app --reload
+cd embed-server && python -m uvicorn main:app --port 8080 --reload
 ```
