@@ -3,7 +3,25 @@ services:
     container_name: muse-surrealdb
     image: surrealdb/surrealdb:latest
     command: start --auth --user root --pass root --log trace file:/mydata/mydatabase.db
+    user: root
     volumes:
-      - ./mydata:/mydata/mydatabase.db
+      - surrealdb-data:/mydata/mydatabase.db
     ports:
       - "8000:8000"
+# ollama ui
+#  open-webui:
+#    container_name: open-webui
+#    image: ghcr.io/open-webui/open-webui:main
+#    restart: always
+#    ports:
+#      - "3000:8080"
+#    volumes:
+#      - open-webui:/app/backend/data
+#    environment:
+#      - WEBUI_AUTH=false
+#    extra_hosts:
+#      - "host.docker.internal:host-gateway"
+
+volumes:
+#  open-webui:
+  surrealdb-data:
