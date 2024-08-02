@@ -1,5 +1,9 @@
 /target
 /mydata
 
+.env
 .idea
 .vscode
+.history
+
+__pycache__

@@ -1,10 +1,11 @@
-mod state;
 mod ai;
+mod state;
 
 use crate::state::AppState;
 use axum::response::Html;
 use axum::routing::get;
 use axum::Router;
+use dotenvy::dotenv;
 use serde::Deserialize;
 use std::sync::Arc;
 use surrealdb::sql::Thing;
@@ -21,6 +22,8 @@ async fn handler() -> Html<&'static str> {
 
 #[tokio::main]
 async fn main() -> surrealdb::Result<()> {
+    dotenv().ok();
+
     let shared_state = Arc::new(AppState::new().await);
 
     let app = Router::new()
