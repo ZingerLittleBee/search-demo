@@ -25,8 +25,9 @@ pub(crate) fn load_onnx_model(
     let builder = Session::builder()?;
 
     let coreml = CoreMLExecutionProvider::default();
-    if coreml.register(&builder).is_err() {
-        warn!("failed to register CoreMLExecutionProvider");
+
+    if let Err(e) = coreml.register(&builder) {
+        warn!("failed to register CoreMLExecutionProvider: {e}");
     }
 
     let config = config.unwrap_or(Default::default());

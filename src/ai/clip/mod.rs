@@ -37,17 +37,6 @@ impl CLIP {
         // let (image_model_uri, text_model_uri, text_tokenizer_vocab_uri) = model_type.model_uri();
         let dim = model_type.dim();
 
-        // let download = file_downloader::FileDownload::new(file_downloader::FileDownloadConfig {
-        //     resources_dir: resources_dir.as_ref().to_path_buf(),
-        //     ..Default::default()
-        // });
-
-        // let image_model_path = download.download_if_not_exists(&image_model_uri).await?;
-        // let text_model_path = download.download_if_not_exists(&text_model_uri).await?;
-        // let text_tokenizer_vocab_path = download
-        //     .download_if_not_exists(&text_tokenizer_vocab_uri)
-        //     .await?;
-
         Self::from_file(
             image_model_path,
             text_model_path,
