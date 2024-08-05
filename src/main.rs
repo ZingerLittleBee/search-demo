@@ -1,4 +1,5 @@
 mod ai;
+mod db;
 mod state;
 
 use crate::state::AppState;
