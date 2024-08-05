@@ -16,3 +16,8 @@ docker-compose up -d
 pip install -r embed-server/requirements.txt
 cd embed-server && python -m uvicorn main:app --port 8080 --reload
 ```
+
+### 下载模型
+```shell
+bash scripts/download-models.sh
+```
