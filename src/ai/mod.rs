@@ -1,2 +1,3 @@
-mod image_to_prompt;
+mod clip;
 mod embeddings;
+mod image_to_prompt;
