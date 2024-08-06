@@ -74,11 +74,11 @@ mod test {
 
         println!(
             "image1 to prompt: {}",
-            super::image_to_prompt(image1).await.unwrap()
+            super::image_to_prompt(image1.as_slice()).await.unwrap()
         );
         println!(
             "image2 to prompt: {}",
-            super::image_to_prompt(image2).await.unwrap()
+            super::image_to_prompt(image2.as_slice()).await.unwrap()
         );
     }
 }
