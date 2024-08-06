@@ -1,7 +1,7 @@
 mod ai;
 mod db;
 mod constant;
-mod model;
+pub mod model;
 mod state;
 
 use axum::response::Html;

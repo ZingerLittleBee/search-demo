@@ -4,9 +4,7 @@ use crate::constant::{
     DATABASE_HOST, DATABASE_NAME, DATABASE_NS, DATABASE_PASSWORD, DATABASE_PORT, DATABASE_USER,
 };
 use crate::db::sql::CREATE_TABLE;
-use crate::model::image::ImageModel;
-use crate::model::item::ItemModel;
-use crate::model::text::TextModel;
+use crate::model::{ImageModel, ItemModel, TextModel};
 use std::env;
 use surrealdb::{
     engine::remote::ws::{Client, Ws},

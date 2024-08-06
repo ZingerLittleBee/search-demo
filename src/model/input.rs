@@ -8,8 +8,8 @@ pub struct ImageInputData {
 }
 
 pub struct ItemInputData {
-    text: Vec<TextInputData>,
-    image: Vec<ImageInputData>,
+    pub text: Vec<TextInputData>,
+    pub image: Vec<ImageInputData>,
 }
 
 pub enum InputData {

@@ -1,7 +1,8 @@
 mod data_handler;
 
 use crate::db::DB;
-use crate::model::input_data::InputData;
+use crate::model::input::InputData;
+use crate::model::DataModel;
 
 pub struct AppState {
     pub db: DB,
@@ -13,13 +14,18 @@ impl AppState {
         let db = DB::new().await;
 
         Self {
-            db: db.clone(),
-            data_handler: data_handler::DataHandler::new(db).await,
+            db,
+            data_handler: data_handler::DataHandler::new().await,
         }
     }
 
     pub async fn data_ingestion(&self, input_data: InputData) -> anyhow::Result<()> {
-        self.data_handler.handler_input_data(input_data).await
+        match self.data_handler.handler_input_data(input_data).await? {
+            DataModel::Text(text) => self.db.insert_text(text).await?,
+            DataModel::Image(image) => self.db.insert_image(image).await?,
+            DataModel::Item(item) => self.db.insert_item(item).await?,
+        }
+        Ok(())
     }
 }
 

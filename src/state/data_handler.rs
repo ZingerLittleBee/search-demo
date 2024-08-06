@@ -1,22 +1,19 @@
 use crate::ai::clip::model::CLIPModel;
 use crate::ai::clip::CLIP;
 use crate::ai::image_to_prompt::image_to_prompt;
-use crate::db::DB;
-use crate::model::image::ImageModel;
-use crate::model::input_data::InputData;
-use crate::model::text::TextModel;
+use crate::model::input::{ImageInputData, InputData, ItemInputData, TextInputData};
+use crate::model::{ImageModel, ItemModel, DataModel, TextModel};
+use futures::future::join_all;
 use std::env;
 use std::path::PathBuf;
 
 pub struct DataHandler {
-    db: DB,
     clip: CLIP,
 }
 
 impl DataHandler {
-    pub async fn new(db: DB) -> Self {
+    pub async fn new() -> Self {
         Self {
-            db,
             clip: DataHandler::init_clip().await,
         }
     }
@@ -44,34 +41,66 @@ impl DataHandler {
         .expect("Failed to load CLIP")
     }
 
-    pub async fn handler_input_data(&self, input_data: InputData) -> anyhow::Result<()> {
+    async fn text_input_data_to_model(&self, input: &TextInputData) -> anyhow::Result<TextModel> {
+        let vector = self.clip.get_text_embedding(input.0.as_str()).await?;
+        Ok(TextModel {
+            data: input.0.clone(),
+            vector: vector.to_vec(),
+        })
+    }
+
+    async fn image_input_data_to_model(
+        &self,
+        input: &ImageInputData,
+    ) -> anyhow::Result<ImageModel> {
+        let prompt = image_to_prompt(input.data.as_slice()).await?;
+        let image = image::load_from_memory(input.data.as_slice())?;
+        let vector = self
+            .clip
+            .get_image_embedding_from_image(&image.to_rgb8())
+            .await?;
+        Ok(ImageModel {
+            url: input.url.clone().into(),
+            prompt,
+            vector: vector.to_vec(),
+        })
+    }
+
+    async fn item_input_data_to_model(&self, input: ItemInputData) -> anyhow::Result<ItemModel> {
+        let text_future = input
+            .text
+            .iter()
+            .map(|t| async { self.text_input_data_to_model(t).await })
+            .collect::<Vec<_>>();
+        let image_future = input
+            .image
+            .iter()
+            .map(|i| async { self.image_input_data_to_model(i).await })
+            .collect::<Vec<_>>();
+
+        let (text_results, image_results) =
+            futures::future::join(join_all(text_future), join_all(image_future)).await;
+
+        Ok(ItemModel {
+            text: text_results.into_iter().collect::<Result<Vec<_>, _>>()?,
+            image: image_results.into_iter().collect::<Result<Vec<_>, _>>()?,
+        })
+    }
+
+    pub async fn handler_input_data(&self, input_data: InputData) -> anyhow::Result<DataModel> {
         match input_data {
             InputData::Text(input) => {
-                let vector = self.clip.get_text_embedding(input.0.as_str()).await?;
-                self.db
-                    .insert_text(TextModel {
-                        data: input.0,
-                        vector: vector.to_vec(),
-                    })
-                    .await?;
+                let text_model = self.text_input_data_to_model(&input).await?;
+                Ok(DataModel::Text(text_model))
             }
             InputData::Image(input) => {
-                let prompt = image_to_prompt(input.data.as_slice()).await?;
-                let image = image::load_from_memory(input.data.as_slice())?;
-                let vector = self
-                    .clip
-                    .get_image_embedding_from_image(&image.to_rgb8())
-                    .await?;
-                self.db
-                    .insert_image(ImageModel {
-                        url: input.url.into(),
-                        prompt,
-                        vector: vector.to_vec(),
-                    })
-                    .await?;
+                let image_model = self.image_input_data_to_model(&input).await?;
+                Ok(DataModel::Image(image_model))
             }
-            InputData::Item(input) => {}
+            InputData::Item(input) => {
+                let item_model = self.item_input_data_to_model(input).await?;
+                Ok(DataModel::Item(item_model))
+            }
         }
-        Ok(())
     }
 }
