@@ -2,6 +2,7 @@ services:
   surrealdb:
     container_name: muse-surrealdb
     image: surrealdb/surrealdb:latest
+    restart: always
     command: start --auth --user root --pass root --log trace file:/mydata/mydatabase.db
     user: root
     volumes:

@@ -11,12 +11,6 @@ docker-compose up -d
 2. 安装 llava 模型，`ollama run llava`
 
 
-### 启动 embed server
-```shell
-pip install -r embed-server/requirements.txt
-cd embed-server && python -m uvicorn main:app --port 8080 --reload
-```
-
 ### 下载模型
 ```shell
 bash scripts/download-models.sh

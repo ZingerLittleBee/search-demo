@@ -1,9 +1,7 @@
 use std::{env, path::PathBuf};
 
-use crate::{
-    ai::clip::{model::CLIPModel, CLIP},
-    db::DB,
-};
+use crate::ai::clip::{model::CLIPModel, CLIP};
+use crate::db::DB;
 
 pub struct AppState {
     pub db: DB,
