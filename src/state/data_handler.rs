@@ -2,7 +2,7 @@ use crate::ai::clip::model::CLIPModel;
 use crate::ai::clip::CLIP;
 use crate::ai::image_to_prompt::image_to_prompt;
 use crate::model::input::{ImageInputData, InputData, ItemInputData, TextInputData};
-use crate::model::{ImageModel, ItemModel, DataModel, TextModel};
+use crate::model::{DataModel, ImageModel, ItemModel, TextModel};
 use futures::future::join_all;
 use std::env;
 use std::path::PathBuf;
@@ -60,7 +60,7 @@ impl DataHandler {
             .get_image_embedding_from_image(&image.to_rgb8())
             .await?;
         Ok(ImageModel {
-            url: input.url.clone().into(),
+            url: input.url.to_string(),
             prompt,
             vector: vector.to_vec(),
         })
