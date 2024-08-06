@@ -1,7 +1,5 @@
-use url::Url;
-
 pub struct ImageModel {
-    pub url: Url,
+    pub url: String,
     pub prompt: String,
     pub vector: Vec<f32>,
 }

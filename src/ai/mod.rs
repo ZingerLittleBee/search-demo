@@ -1,2 +1,2 @@
 pub mod clip;
-mod image_to_prompt;
+pub mod image_to_prompt;

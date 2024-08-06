@@ -4,6 +4,9 @@ use crate::constant::{
     DATABASE_HOST, DATABASE_NAME, DATABASE_NS, DATABASE_PASSWORD, DATABASE_PORT, DATABASE_USER,
 };
 use crate::db::sql::CREATE_TABLE;
+use crate::model::image::ImageModel;
+use crate::model::item::ItemModel;
+use crate::model::text::TextModel;
 use std::env;
 use surrealdb::{
     engine::remote::ws::{Client, Ws},
@@ -44,6 +47,18 @@ impl DB {
 
     async fn init_table(db: &Surreal<Client>) -> anyhow::Result<()> {
         db.query(CREATE_TABLE).await?;
+        Ok(())
+    }
+
+    pub async fn insert_text(&self, input: TextModel) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    pub async fn insert_image(&self, input: ImageModel) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    pub async fn insert_item(&self, input: ItemModel) -> anyhow::Result<()> {
         Ok(())
     }
 }

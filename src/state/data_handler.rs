@@ -1,7 +1,10 @@
 use crate::ai::clip::model::CLIPModel;
 use crate::ai::clip::CLIP;
+use crate::ai::image_to_prompt::image_to_prompt;
 use crate::db::DB;
+use crate::model::image::ImageModel;
 use crate::model::input_data::InputData;
+use crate::model::text::TextModel;
 use std::env;
 use std::path::PathBuf;
 
@@ -43,9 +46,31 @@ impl DataHandler {
 
     pub async fn handler_input_data(&self, input_data: InputData) -> anyhow::Result<()> {
         match input_data {
-            InputData::Image(image_model) => {}
-            InputData::Text(text_model) => {}
-            InputData::Item(text_models, image_models) => {}
+            InputData::Text(input) => {
+                let vector = self.clip.get_text_embedding(input.0.as_str()).await?;
+                self.db
+                    .insert_text(TextModel {
+                        data: input.0,
+                        vector: vector.to_vec(),
+                    })
+                    .await?;
+            }
+            InputData::Image(input) => {
+                let prompt = image_to_prompt(input.data.as_slice()).await?;
+                let image = image::load_from_memory(input.data.as_slice())?;
+                let vector = self
+                    .clip
+                    .get_image_embedding_from_image(&image.to_rgb8())
+                    .await?;
+                self.db
+                    .insert_image(ImageModel {
+                        url: input.url.into(),
+                        prompt,
+                        vector: vector.to_vec(),
+                    })
+                    .await?;
+            }
+            InputData::Item(input) => {}
         }
         Ok(())
     }

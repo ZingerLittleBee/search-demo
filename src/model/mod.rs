@@ -1,4 +1,4 @@
-mod image;
+pub mod image;
 pub mod input_data;
-mod item;
-mod text;
+pub mod item;
+pub mod text;

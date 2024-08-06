@@ -28,7 +28,7 @@ struct ResponseData {
     eval_duration: i64,
 }
 
-pub async fn image_to_prompt(image: Vec<u8>) -> anyhow::Result<String> {
+pub async fn image_to_prompt(image: &[u8]) -> anyhow::Result<String> {
     let client = Client::new();
     let request_data = RequestData {
         model: "llava".to_string(),
@@ -72,7 +72,13 @@ mod test {
         let image1 = read_image_from_path("test/image.png").await.unwrap();
         let image2 = read_image_from_path("test/img2.jpeg").await.unwrap();
 
-        println!("image1 to prompt: {}", super::image_to_prompt(image1).await.unwrap());
-        println!("image2 to prompt: {}", super::image_to_prompt(image2).await.unwrap());
+        println!(
+            "image1 to prompt: {}",
+            super::image_to_prompt(image1).await.unwrap()
+        );
+        println!(
+            "image2 to prompt: {}",
+            super::image_to_prompt(image2).await.unwrap()
+        );
     }
 }
