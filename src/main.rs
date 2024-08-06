@@ -1,9 +1,9 @@
 mod ai;
 mod db;
-mod state;
 mod constant;
+mod model;
+mod state;
 
-use crate::state::AppState;
 use axum::response::Html;
 use axum::routing::get;
 use axum::Router;
@@ -12,6 +12,7 @@ use serde::Deserialize;
 use std::sync::Arc;
 use surrealdb::sql::Thing;
 use tracing::info;
+use crate::state::AppState;
 
 #[derive(Debug, Deserialize)]
 struct Record {
