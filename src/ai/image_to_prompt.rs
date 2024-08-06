@@ -1,5 +1,5 @@
-use base64::Engine;
 use base64::engine::general_purpose;
+use base64::Engine;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tokio::fs::File;
@@ -28,13 +28,13 @@ struct ResponseData {
     eval_duration: i64,
 }
 
-pub async fn image_to_prompt(images: Vec<String>) -> anyhow::Result<String> {
+pub async fn image_to_prompt(image: Vec<u8>) -> anyhow::Result<String> {
     let client = Client::new();
     let request_data = RequestData {
         model: "llava".to_string(),
         prompt: "What is in this picture?".to_string(),
         stream: false,
-        images,
+        images: vec![general_purpose::STANDARD.encode(image)],
     };
 
     let response = client
@@ -55,14 +55,24 @@ pub async fn image_to_base64(image_path: impl AsRef<std::path::Path>) -> anyhow:
     Ok(general_purpose::STANDARD.encode(&buffer))
 }
 
+pub async fn read_image_from_path(
+    image_path: impl AsRef<std::path::Path>,
+) -> anyhow::Result<Vec<u8>> {
+    let mut file = File::open(image_path).await?;
+    let mut buffer = Vec::new();
+    file.read_to_end(&mut buffer).await?;
+    Ok(buffer)
+}
+
 mod test {
-    use crate::ai::image_to_prompt::image_to_base64;
+    use crate::ai::image_to_prompt::read_image_from_path;
 
     #[tokio::test]
     async fn test_image_to_prompt() {
-        let image_base64 = image_to_base64("test/image.png").await.unwrap();
+        let image1 = read_image_from_path("test/image.png").await.unwrap();
+        let image2 = read_image_from_path("test/img2.jpeg").await.unwrap();
 
-        let response = super::image_to_prompt(vec![image_base64]).await.unwrap();
-        println!("image to prompt: {}", response);
+        println!("image1 to prompt: {}", super::image_to_prompt(image1).await.unwrap());
+        println!("image2 to prompt: {}", super::image_to_prompt(image2).await.unwrap());
     }
 }
