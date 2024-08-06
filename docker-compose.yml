@@ -3,12 +3,12 @@ services:
     container_name: muse-surrealdb
     image: surrealdb/surrealdb:latest
     restart: always
-    command: start --auth --user root --pass root --log trace file:/mydata/mydatabase.db
+    command: start --auth --user ${DATABASE_USER} --pass ${DATABASE_PASSWORD} --log trace file:/mydata/mydatabase.db
     user: root
     volumes:
       - surrealdb-data:/mydata/mydatabase.db
     ports:
-      - "8000:8000"
+      - "${DATABASE_PORT}:8000"
 # ollama ui
 #  open-webui:
 #    container_name: open-webui

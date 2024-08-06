@@ -1,6 +1,10 @@
 mod sql;
 
+use crate::constant::{
+    DATABASE_HOST, DATABASE_NAME, DATABASE_NS, DATABASE_PASSWORD, DATABASE_PORT, DATABASE_USER,
+};
 use crate::db::sql::CREATE_TABLE;
+use std::env;
 use surrealdb::{
     engine::remote::ws::{Client, Ws},
     opt::auth::Root,
@@ -20,13 +24,20 @@ impl DB {
     }
 
     async fn init_db() -> anyhow::Result<Surreal<Client>> {
-        let db = Surreal::new::<Ws>("127.0.0.1:8000").await?;
+        let db = Surreal::new::<Ws>(format!(
+            "{}:{}",
+            env::var(DATABASE_HOST)?,
+            env::var(DATABASE_PORT)?
+        ))
+        .await?;
         db.signin(Root {
-            username: "root",
-            password: "root",
+            username: &env::var(DATABASE_USER)?,
+            password: &env::var(DATABASE_PASSWORD)?,
         })
         .await?;
-        db.use_ns("dam").use_db("search").await?;
+        db.use_ns(env::var(DATABASE_NS)?)
+            .use_db(env::var(DATABASE_NAME)?)
+            .await?;
         DB::init_table(&db).await?;
         Ok(db)
     }

@@ -6,6 +6,11 @@
 docker-compose up -d
 ```
 
+### 创建环境变量
+```shell
+cp .env.example .env
+```
+
 ### 安装图片转提示词服务
 1. 安装 [ollama](https://ollama.com/)
 2. 安装 llava 模型，`ollama run llava`
