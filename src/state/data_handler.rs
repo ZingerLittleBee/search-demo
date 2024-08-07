@@ -118,7 +118,9 @@ impl DataHandler {
             vector: vector.to_vec(),
         })
     }
+}
 
+impl DataHandler {
     async fn image_search_data_to_model(
         &self,
         input: &ImageSearchData,

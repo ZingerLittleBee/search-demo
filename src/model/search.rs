@@ -39,3 +39,21 @@ pub enum SearchModel {
     Image(ImageSearchModel),
     Item(ItemSearchModel),
 }
+
+pub struct TextSearchResult(pub String);
+
+pub struct ImageSearchResult {
+    pub url: String,
+    pub prompt: String,
+}
+
+pub struct ItemSearchResult {
+    pub text: Vec<TextSearchResult>,
+    pub image: Vec<ImageSearchResult>,
+}
+
+pub enum SearchResult {
+    Text(Vec<TextSearchResult>),
+    Image(Vec<ImageSearchResult>),
+    Item(Vec<ItemSearchResult>),
+}

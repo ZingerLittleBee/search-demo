@@ -20,6 +20,7 @@ impl AppState {
         }
     }
 
+    // 数据入库
     pub async fn data_ingestion(&self, input_data: InputData) -> anyhow::Result<()> {
         match self.data_handler.handle_input_data(input_data).await? {
             DataModel::Text(text) => self.db.insert_text(text).await?,
@@ -29,6 +30,7 @@ impl AppState {
         Ok(())
     }
 
+    // 数据查询
     pub async fn search(&self, input: SearchData) -> anyhow::Result<()> {
         match self.data_handler.handle_search_data(input).await? {
             SearchModel::Text(_) => {}

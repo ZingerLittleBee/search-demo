@@ -4,6 +4,7 @@ use crate::constant::{
     DATABASE_HOST, DATABASE_NAME, DATABASE_NS, DATABASE_PASSWORD, DATABASE_PORT, DATABASE_USER,
 };
 use crate::db::sql::CREATE_TABLE;
+use crate::model::search::{ImageSearchModel, ItemSearchModel, TextSearchModel};
 use crate::model::{ImageModel, ItemModel, TextModel};
 use std::env;
 use surrealdb::{
@@ -48,7 +49,10 @@ impl DB {
         db.query(CREATE_TABLE).await?;
         Ok(())
     }
+}
 
+// 📖 入库实现
+impl DB {
     pub async fn insert_text(&self, input: TextModel) -> anyhow::Result<()> {
         self.client
             .query(
@@ -136,6 +140,36 @@ impl DB {
 
         self.client.query(&sql).await?;
 
+        Ok(())
+    }
+}
+
+// 🔍 搜索实现
+impl DB {
+    async fn full_text_search(&self, data: String) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    async fn vector_search(&self, data: Vec<f32>) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    async fn prompt_search(&self, data: String) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    pub async fn search_text(&self, data: TextSearchModel) -> anyhow::Result<()> {
+        // 1. 全文搜索
+        // 2. 向量搜索
+        // 3. prompt 搜索
+        Ok(())
+    }
+
+    pub async fn search_image(&self, data: ImageSearchModel) -> anyhow::Result<()> {
+        Ok(())
+    }
+
+    pub async fn search_item(&self, data: ItemSearchModel) -> anyhow::Result<()> {
         Ok(())
     }
 }
