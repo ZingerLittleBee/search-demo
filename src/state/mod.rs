@@ -2,6 +2,7 @@ mod data_handler;
 
 use crate::db::DB;
 use crate::model::input::InputData;
+use crate::model::search::{SearchData, SearchModel};
 use crate::model::DataModel;
 
 pub struct AppState {
@@ -20,10 +21,19 @@ impl AppState {
     }
 
     pub async fn data_ingestion(&self, input_data: InputData) -> anyhow::Result<()> {
-        match self.data_handler.handler_input_data(input_data).await? {
+        match self.data_handler.handle_input_data(input_data).await? {
             DataModel::Text(text) => self.db.insert_text(text).await?,
             DataModel::Image(image) => self.db.insert_image(image).await?,
             DataModel::Item(item) => self.db.insert_item(item).await?,
+        }
+        Ok(())
+    }
+
+    pub async fn search(&self, input: SearchData) -> anyhow::Result<()> {
+        match self.data_handler.handle_search_data(input).await? {
+            SearchModel::Text(_) => {}
+            SearchModel::Image(_) => {}
+            SearchModel::Item(_) => {}
         }
         Ok(())
     }

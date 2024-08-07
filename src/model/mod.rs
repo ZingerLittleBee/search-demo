@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 pub mod input;
+pub mod search;
 
 #[derive(Serialize, Deserialize)]
 pub struct ImageModel {

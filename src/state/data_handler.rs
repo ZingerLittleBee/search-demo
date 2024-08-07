@@ -2,6 +2,10 @@ use crate::ai::clip::model::CLIPModel;
 use crate::ai::clip::CLIP;
 use crate::ai::image_to_prompt::image_to_prompt;
 use crate::model::input::{ImageInputData, InputData, ItemInputData, TextInputData};
+use crate::model::search::{
+    ImageSearchData, ImageSearchModel, ItemSearchData, ItemSearchModel, SearchData, SearchModel,
+    TextSearchData, TextSearchModel,
+};
 use crate::model::{DataModel, ImageModel, ItemModel, TextModel};
 use futures::future::join_all;
 use std::env;
@@ -87,7 +91,7 @@ impl DataHandler {
         })
     }
 
-    pub async fn handler_input_data(&self, input_data: InputData) -> anyhow::Result<DataModel> {
+    pub async fn handle_input_data(&self, input_data: InputData) -> anyhow::Result<DataModel> {
         match input_data {
             InputData::Text(input) => {
                 let text_model = self.text_input_data_to_model(&input).await?;
@@ -101,6 +105,72 @@ impl DataHandler {
                 let item_model = self.item_input_data_to_model(input).await?;
                 Ok(DataModel::Item(item_model))
             }
+        }
+    }
+
+    async fn text_search_data_to_model(
+        &self,
+        input: &TextSearchData,
+    ) -> anyhow::Result<TextSearchModel> {
+        let vector = self.clip.get_text_embedding(input.0.as_str()).await?;
+        Ok(TextSearchModel {
+            data: input.0.clone(),
+            vector: vector.to_vec(),
+        })
+    }
+
+    async fn image_search_data_to_model(
+        &self,
+        input: &ImageSearchData,
+    ) -> anyhow::Result<ImageSearchModel> {
+        let prompt = image_to_prompt(input.data.as_slice()).await?;
+        let image = image::load_from_memory(input.data.as_slice())?;
+        let vector = self
+            .clip
+            .get_image_embedding_from_image(&image.to_rgb8())
+            .await?;
+        Ok(ImageSearchModel {
+            url: input.url.to_string(),
+            prompt,
+            vector: vector.to_vec(),
+        })
+    }
+
+    async fn item_search_data_to_model(
+        &self,
+        input: &ItemSearchData,
+    ) -> anyhow::Result<ItemSearchModel> {
+        let text_future = input
+            .text
+            .iter()
+            .map(|t| async { self.text_search_data_to_model(t).await })
+            .collect::<Vec<_>>();
+        let image_future = input
+            .image
+            .iter()
+            .map(|i| async { self.image_search_data_to_model(i).await })
+            .collect::<Vec<_>>();
+
+        let (text_results, image_results) =
+            futures::future::join(join_all(text_future), join_all(image_future)).await;
+
+        Ok(ItemSearchModel {
+            text: text_results.into_iter().collect::<Result<Vec<_>, _>>()?,
+            image: image_results.into_iter().collect::<Result<Vec<_>, _>>()?,
+        })
+    }
+
+    pub async fn handle_search_data(&self, input: SearchData) -> anyhow::Result<SearchModel> {
+        match input {
+            SearchData::Text(text) => Ok(SearchModel::Text(
+                self.text_search_data_to_model(&text).await?,
+            )),
+            SearchData::Image(image) => Ok(SearchModel::Image(
+                self.image_search_data_to_model(&image).await?,
+            )),
+            SearchData::Item(item) => Ok(SearchModel::Item(
+                self.item_search_data_to_model(&item).await?,
+            )),
         }
     }
 }
