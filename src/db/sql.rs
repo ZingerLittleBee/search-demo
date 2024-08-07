@@ -30,4 +30,16 @@ DEFINE TABLE IF NOT EXISTS video;
 -- 定义 "video" 表的字段
 DEFINE FIELD IF NOT EXISTS url ON TABLE video TYPE string;
 DEFINE FIELD IF NOT EXISTS frame ON TABLE video TYPE array<record<frame>>;
+
+-- 定义向量索引
+DEFINE INDEX IF NOT EXISTS idx_text_vector_hnsw_d512 ON text FIELDS vector HNSW DIMENSION 512 DIST EUCLIDEAN;
+DEFINE INDEX IF NOT EXISTS idx_image_vector_hnsw_d512 ON image FIELDS vector HNSW DIMENSION 512 DIST EUCLIDEAN;
+
+-- 定义分词器
+-- https://github.com/surrealdb/surrealdb/issues/2850
+DEFINE ANALYZER IF NOT EXISTS mixed_analyzer TOKENIZERS class FILTERS lowercase, ascii, ngram(1,3);
+
+-- 定义索引
+DEFINE INDEX IF NOT EXISTS mixed_index_text_data ON text FIELDS data SEARCH ANALYZER mixed_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX IF NOT EXISTS mixed_index_image_prompt ON image FIELDS prompt SEARCH ANALYZER mixed_analyzer BM25 HIGHLIGHTS;
 "#;
