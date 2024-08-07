@@ -11,6 +11,7 @@ use surrealdb::{
     opt::auth::Root,
     Surreal,
 };
+use tracing::debug;
 
 #[derive(Clone)]
 pub struct DB {
@@ -78,16 +79,81 @@ impl DB {
     }
 
     pub async fn insert_item(&self, input: ItemModel) -> anyhow::Result<()> {
+        let mut create_text_sql_vec = vec![];
+        let mut create_image_sql_vec = vec![];
+        let mut item_text_record = vec![];
+        let mut item_image_record = vec![];
+
+        input.text.iter().enumerate().for_each(|(i, text)| {
+            create_text_sql_vec.push(format!(
+                "LET $text_{} = (CREATE ONLY text CONTENT {{data: '{}', vector: [{}]}}).id;",
+                i,
+                text.data,
+                text.vector
+                    .iter()
+                    .map(|v| v.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            ));
+            item_text_record.push(format!("$text_{}", i));
+        });
+        input.image.iter().enumerate().for_each(|(i, image)| {
+            create_image_sql_vec.push(format!(
+                "LET $image_{} = (CREATE ONLY image CONTENT {{url: '{}', prompt: '{}', vector: [{}]}}).id;",
+                i,
+                image.url,
+                image.prompt,
+                image
+                    .vector
+                    .iter()
+                    .map(|v| v.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", ")
+            ));
+            item_image_record.push(format!("$image_{}", i));
+        });
+        let create_item_sql = format!(
+            "LET $item = (CREATE ONLY item CONTENT {{ text: [{}], image: [{}]}}).id;",
+            item_text_record.join(", "),
+            item_image_record.join(", ")
+        );
+        let create_relate_sql = format!(
+            "RELATE {} -> contains -> [{}, {}];",
+            "$item",
+            item_text_record.join(", "),
+            item_image_record.join(", ")
+        );
+
+        let sql = [
+            create_text_sql_vec.join("\n"),
+            create_image_sql_vec.join("\n"),
+            create_item_sql,
+            create_relate_sql,
+        ]
+        .join("\n");
+
+        debug!("insert item sql: {}", sql);
+
+        self.client.query(&sql).await?;
+
         Ok(())
     }
 }
 
 mod test {
+    use crate::model::ItemModel;
     use dotenvy::dotenv;
+    use rand::Rng;
 
     async fn setup() -> crate::db::DB {
         dotenv().ok();
         crate::db::DB::new().await
+    }
+
+    fn gen_vector() -> Vec<f32> {
+        (0..512)
+            .map(|_| rand::thread_rng().gen_range(0.0..1.0))
+            .collect()
     }
 
     #[tokio::test]
@@ -95,7 +161,7 @@ mod test {
         let db = setup().await;
         let text = crate::model::TextModel {
             data: "Hello, World!".to_string(),
-            vector: vec![0.0, 1.0, 2.0],
+            vector: gen_vector(),
         };
         db.insert_text(text).await.unwrap();
         let res = db
@@ -112,7 +178,7 @@ mod test {
         let image = crate::model::ImageModel {
             url: "https://example.com".to_string(),
             prompt: "What is in this picture?".to_string(),
-            vector: vec![0.0, 1.0, 2.0],
+            vector: gen_vector(),
         };
         db.insert_image(image).await.unwrap();
         let res = db
@@ -121,5 +187,35 @@ mod test {
             .await
             .unwrap();
         println!("res: {:?}", res);
+    }
+
+    #[tokio::test]
+    async fn test_insert_item() {
+        let db = setup().await;
+        let item = ItemModel {
+            text: vec![
+                crate::model::TextModel {
+                    data: "Hello, World!".to_string(),
+                    vector: gen_vector(),
+                },
+                crate::model::TextModel {
+                    data: "Hello, World2!".to_string(),
+                    vector: gen_vector(),
+                },
+            ],
+            image: vec![
+                crate::model::ImageModel {
+                    url: "https://example.com".to_string(),
+                    prompt: "What is in this picture?".to_string(),
+                    vector: gen_vector(),
+                },
+                crate::model::ImageModel {
+                    url: "https://example.com2".to_string(),
+                    prompt: "What is in this picture2?".to_string(),
+                    vector: gen_vector(),
+                },
+            ],
+        };
+        db.insert_item(item).await.unwrap();
     }
 }

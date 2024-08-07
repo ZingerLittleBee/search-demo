@@ -1,5 +1,5 @@
 [package]
-name = "search-demp"
+name = "search-demo"
 version = "0.1.0"
 edition = "2021"
 
@@ -22,3 +22,4 @@ tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 url = "2.5.2"
 futures = "0.3.30"
+rand = "0.8.5"
