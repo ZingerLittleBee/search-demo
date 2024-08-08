@@ -4,7 +4,7 @@ use crate::constant::{
     DATABASE_HOST, DATABASE_NAME, DATABASE_NS, DATABASE_PASSWORD, DATABASE_PORT, DATABASE_USER,
 };
 use crate::db::sql::CREATE_TABLE;
-use crate::model::search::{ImageSearchModel, ItemSearchModel, TextSearchModel};
+use crate::model::search::{ImageSearchModel, ItemSearchModel, TextSearchModel, TextToken};
 use crate::model::{ImageModel, ItemModel, TextModel};
 use std::env;
 use surrealdb::{
@@ -146,7 +146,7 @@ impl DB {
 
 // 🔍 搜索实现
 impl DB {
-    async fn full_text_search(&self, data: String) -> anyhow::Result<()> {
+    async fn full_text_search(&self, data: TextToken) -> anyhow::Result<()> {
         Ok(())
     }
 
@@ -154,14 +154,9 @@ impl DB {
         Ok(())
     }
 
-    async fn prompt_search(&self, data: String) -> anyhow::Result<()> {
-        Ok(())
-    }
-
     pub async fn search_text(&self, data: TextSearchModel) -> anyhow::Result<()> {
         // 1. 全文搜索
         // 2. 向量搜索
-        // 3. prompt 搜索
         Ok(())
     }
 

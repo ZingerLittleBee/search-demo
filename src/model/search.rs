@@ -18,14 +18,19 @@ pub enum SearchData {
     Item(ItemSearchData),
 }
 
+pub struct TextToken(pub Vec<String>);
+
 pub struct TextSearchModel {
     pub data: String,
+    pub tokens: TextToken,
     pub vector: Vec<f32>,
 }
 
 pub struct ImageSearchModel {
     pub url: String,
     pub prompt: String,
+    pub prompt_search_model: TextSearchModel,
+    /// 图片向量
     pub vector: Vec<f32>,
 }
 
@@ -34,26 +39,26 @@ pub struct ItemSearchModel {
     pub image: Vec<ImageSearchModel>,
 }
 
+/// 搜索的入参
 pub enum SearchModel {
     Text(TextSearchModel),
     Image(ImageSearchModel),
     Item(ItemSearchModel),
 }
 
-pub struct TextSearchResult(pub String);
+/// 文本的搜索结果
+pub struct TextSearchResult {
+    pub id: String,
+    pub score: Vec<(String, f32)>,
+}
 
+/// 图片的搜索结果
 pub struct ImageSearchResult {
-    pub url: String,
-    pub prompt: String,
+    pub id: String,
 }
 
-pub struct ItemSearchResult {
-    pub text: Vec<TextSearchResult>,
-    pub image: Vec<ImageSearchResult>,
-}
-
+/// 搜索的结果
 pub enum SearchResult {
     Text(Vec<TextSearchResult>),
     Image(Vec<ImageSearchResult>),
-    Item(Vec<ItemSearchResult>),
 }

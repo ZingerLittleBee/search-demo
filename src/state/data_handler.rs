@@ -4,9 +4,10 @@ use crate::ai::image_to_prompt::image_to_prompt;
 use crate::model::input::{ImageInputData, InputData, ItemInputData, TextInputData};
 use crate::model::search::{
     ImageSearchData, ImageSearchModel, ItemSearchData, ItemSearchModel, SearchData, SearchModel,
-    TextSearchData, TextSearchModel,
+    TextSearchData, TextSearchModel, TextToken,
 };
 use crate::model::{DataModel, ImageModel, ItemModel, TextModel};
+use anyhow::Ok;
 use futures::future::join_all;
 use std::env;
 use std::path::PathBuf;
@@ -45,6 +46,14 @@ impl DataHandler {
         .expect("Failed to load CLIP")
     }
 
+    /// TODO
+    /// 暂时只针对英文简单以空格分隔
+    async fn tokenizer(&self, data: &str) -> anyhow::Result<Vec<String>> {
+        Ok(data.split(" ").map(|s| s.to_string()).collect())
+    }
+}
+
+impl DataHandler {
     async fn text_input_data_to_model(&self, input: &TextInputData) -> anyhow::Result<TextModel> {
         let vector = self.clip.get_text_embedding(input.0.as_str()).await?;
         Ok(TextModel {
@@ -115,6 +124,7 @@ impl DataHandler {
         let vector = self.clip.get_text_embedding(input.0.as_str()).await?;
         Ok(TextSearchModel {
             data: input.0.clone(),
+            tokens: TextToken(self.tokenizer(input.0.as_str()).await?),
             vector: vector.to_vec(),
         })
     }
@@ -133,7 +143,16 @@ impl DataHandler {
             .await?;
         Ok(ImageSearchModel {
             url: input.url.to_string(),
-            prompt,
+            prompt: prompt.clone(),
+            prompt_search_model: TextSearchModel {
+                data: prompt.clone(),
+                tokens: TextToken(self.tokenizer(prompt.as_str()).await?),
+                vector: self
+                    .clip
+                    .get_text_embedding(prompt.as_str())
+                    .await?
+                    .to_vec(),
+            },
             vector: vector.to_vec(),
         })
     }
