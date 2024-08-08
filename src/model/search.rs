@@ -48,7 +48,11 @@ pub enum SearchModel {
 
 /// 文本的搜索结果
 pub struct TextSearchResult {
+    // 命中记录的 ID
     pub id: String,
+    // 命中记录的结果
+    pub data: String,
+    // 搜索的关键词，分数
     pub score: Vec<(String, f32)>,
 }
 

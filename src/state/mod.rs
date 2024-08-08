@@ -1,4 +1,4 @@
-mod data_handler;
+pub(crate) mod data_handler;
 
 use crate::db::DB;
 use crate::model::input::InputData;

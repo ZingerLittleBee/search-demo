@@ -51,11 +51,15 @@ impl DataHandler {
     async fn tokenizer(&self, data: &str) -> anyhow::Result<Vec<String>> {
         Ok(data.split(" ").map(|s| s.to_string()).collect())
     }
+
+    pub(crate) async fn get_text_embedding(&self, data: &str) -> anyhow::Result<Vec<f32>> {
+        Ok(self.clip.get_text_embedding(data).await?.to_vec())
+    }
 }
 
 impl DataHandler {
     async fn text_input_data_to_model(&self, input: &TextInputData) -> anyhow::Result<TextModel> {
-        let vector = self.clip.get_text_embedding(input.0.as_str()).await?;
+        let vector = self.get_text_embedding(input.0.as_str()).await?;
         Ok(TextModel {
             data: input.0.clone(),
             vector: vector.to_vec(),

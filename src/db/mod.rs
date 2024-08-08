@@ -1,10 +1,14 @@
+mod entity;
 mod sql;
 
 use crate::constant::{
     DATABASE_HOST, DATABASE_NAME, DATABASE_NS, DATABASE_PASSWORD, DATABASE_PORT, DATABASE_USER,
 };
+use crate::db::entity::text::TextEntity;
 use crate::db::sql::CREATE_TABLE;
-use crate::model::search::{ImageSearchModel, ItemSearchModel, TextSearchModel, TextToken};
+use crate::model::search::{
+    ImageSearchModel, ItemSearchModel, TextSearchModel, TextSearchResult, TextToken,
+};
 use crate::model::{ImageModel, ItemModel, TextModel};
 use std::env;
 use surrealdb::{
@@ -146,11 +150,41 @@ impl DB {
 
 // 🔍 搜索实现
 impl DB {
-    async fn full_text_search(&self, data: TextToken) -> anyhow::Result<()> {
-        Ok(())
+    async fn full_text_search(&self, data: Vec<String>) -> anyhow::Result<Vec<TextSearchResult>> {
+        let param_sql = |data: (usize, &String)| -> (String, String) {
+            (
+                format!("search::score({}) AS score_{}", data.0, data.0),
+                format!("data @{}@ '{}'", data.0, data.1),
+            )
+        };
+
+        let (search_scores, where_clauses): (Vec<_>, Vec<_>) =
+            data.iter().enumerate().map(param_sql).unzip();
+
+        let sql = format!(
+            "SELECT id, data, {} FROM text WHERE {};",
+            search_scores.join(", "),
+            where_clauses.join(" AND ")
+        );
+        debug!("full text search sql: {}", sql);
+        let text: Vec<TextEntity> = self.client.query(&sql).await?.take(0)?;
+
+        Ok(text
+            .iter()
+            .map(|t| t.convert_to_result(data.clone()))
+            .collect())
     }
 
     async fn vector_search(&self, data: Vec<f32>) -> anyhow::Result<()> {
+        let mut res = self
+            .client
+            .query("SELECT id, data FROM text WHERE vector <|10,40|> $vector;")
+            .bind(("vector", data))
+            .await?;
+
+        let data: Vec<String> = res.take("data")?;
+        debug!("vector search result: {:?}", data);
+
         Ok(())
     }
 
@@ -172,10 +206,15 @@ impl DB {
 mod test {
     use crate::model::ItemModel;
     use dotenvy::dotenv;
+    use futures::stream::iter;
     use rand::Rng;
+    use tracing_subscriber::EnvFilter;
 
     async fn setup() -> crate::db::DB {
         dotenv().ok();
+        tracing_subscriber::fmt()
+            .with_env_filter(EnvFilter::from_default_env())
+            .init();
         crate::db::DB::new().await
     }
 
@@ -246,5 +285,56 @@ mod test {
             ],
         };
         db.insert_item(item).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_full_text_search() {
+        let db = setup().await;
+        let handler = crate::state::data_handler::DataHandler::new().await;
+        db.insert_text(crate::model::TextModel {
+            data: "Rust Web Programming".to_string(),
+            vector: handler
+                .get_text_embedding("Rust Web Programming")
+                .await
+                .unwrap(),
+        })
+        .await
+        .unwrap();
+        db.insert_text(crate::model::TextModel {
+            data: "Rust Web Programming2222".to_string(),
+            vector: handler
+                .get_text_embedding("Rust Web Programming2222")
+                .await
+                .unwrap(),
+        })
+        .await
+        .unwrap();
+        db.insert_text(crate::model::TextModel {
+            data: "Rust Web Programming3333".to_string(),
+            vector: handler
+                .get_text_embedding("Rust Web Programming3333")
+                .await
+                .unwrap(),
+        })
+        .await
+        .unwrap();
+
+        let data = vec!["rust".to_string(), "Programming3333".to_string()];
+        assert!(db.full_text_search(data).await.unwrap().len() >= 1);
+    }
+
+    #[tokio::test]
+    async fn test_vector_search() {
+        let db = setup().await;
+        let handler = crate::state::data_handler::DataHandler::new().await;
+        let test_data = "hello world";
+        let embedding_text = handler.get_text_embedding(test_data).await.unwrap();
+        db.insert_text(crate::model::TextModel {
+            data: test_data.to_string(),
+            vector: embedding_text.clone(),
+        })
+        .await
+        .unwrap();
+        db.vector_search(embedding_text).await.unwrap();
     }
 }
