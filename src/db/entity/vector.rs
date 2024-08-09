@@ -8,10 +8,10 @@ pub(crate) struct VectorSearchEntity {
     distance: f32,
 }
 
-impl From<VectorSearchEntity> for VectorSearchResult {
-    fn from(entity: VectorSearchEntity) -> Self {
+impl From<&VectorSearchEntity> for VectorSearchResult {
+    fn from(entity: &VectorSearchEntity) -> Self {
         VectorSearchResult {
-            id: entity.id.into(),
+            id: entity.id.clone().into(),
             distance: entity.distance,
         }
     }

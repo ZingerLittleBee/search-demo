@@ -57,6 +57,7 @@ pub enum SearchResult {
 }
 
 // table
+#[derive(Debug)]
 pub enum TB {
     Text,
     Image,
@@ -72,6 +73,7 @@ impl From<&str> for TB {
     }
 }
 
+#[derive(Debug)]
 pub struct ID {
     id: String,
     tb: TB,

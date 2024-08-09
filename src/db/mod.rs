@@ -5,8 +5,10 @@ use crate::constant::{
     DATABASE_HOST, DATABASE_NAME, DATABASE_NS, DATABASE_PASSWORD, DATABASE_PORT, DATABASE_USER,
 };
 use crate::db::entity::full_text::FullTextSearchEntity;
+use crate::db::entity::vector::VectorSearchEntity;
 use crate::db::sql::CREATE_TABLE;
 use crate::model::search::full_text::{FullTextSearchResult, FULL_TEXT_SEARCH_TABLE};
+use crate::model::search::vector::{VectorSearchResult, VECTOR_SEARCH_TABLE};
 use crate::model::{ImageModel, ItemModel, TextModel};
 use futures::future::join_all;
 use std::env;
@@ -196,17 +198,38 @@ impl DB {
 
 // 🔍 向量搜索实现
 impl DB {
-    async fn vector_search(&self, data: Vec<f32>) -> anyhow::Result<()> {
-        let mut res = self
-            .client
-            .query("SELECT id FROM text WHERE vector <|10,40|> $vector;")
-            .bind(("vector", data))
-            .await?;
+    async fn vector_search(
+        &self,
+        data: Vec<f32>,
+        range: Option<&str>,
+    ) -> anyhow::Result<Vec<VectorSearchResult>> {
+        let range = range.unwrap_or_else(|| "<|10,40|>");
+        let futures = VECTOR_SEARCH_TABLE.map(|v| {
+            let data = data.clone();
+            async move {
+                let mut res = self
+                    .client
+                    .query(format!("SELECT id, vector::distance::knn() AS distance FROM {} WHERE {} {} $vector ORDER BY distance;", v.table_name(), v.column_name(), range))
+                    .bind(("vector", data))
+                    .await?;
+                let res: Vec<VectorSearchEntity> = res.take(0)?;
+                Ok::<_, anyhow::Error>(res.iter().map(|d| d.into()).collect::<Vec<VectorSearchResult>>())
+            }
+        });
 
-        let data: Vec<String> = res.take("data")?;
-        debug!("vector search result: {:?}", data);
-
-        Ok(())
+        let mut res: Vec<VectorSearchResult> = join_all(futures)
+            .await
+            .into_iter()
+            .collect::<anyhow::Result<Vec<_>>>()?
+            .into_iter()
+            .flatten()
+            .collect();
+        res.sort_by(|a, b| {
+            a.distance
+                .partial_cmp(&b.distance)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+        Ok(res)
     }
 }
 
@@ -251,7 +274,7 @@ mod test {
         let db = setup().await;
         let image = crate::model::ImageModel {
             url: "https://example.com".to_string(),
-            prompt: "What is in this picture?".to_string(),
+            prompt: "hello world".to_string(),
             vector: gen_vector(),
         };
         db.insert_image(image).await.unwrap();
@@ -349,6 +372,9 @@ mod test {
         // })
         // .await
         // .unwrap();
-        db.vector_search(embedding_text).await.unwrap();
+        println!(
+            "{:?}",
+            db.vector_search(embedding_text, None).await.unwrap()
+        );
     }
 }
