@@ -1,3 +1,8 @@
+pub mod full_text;
+pub mod vector;
+
+use crate::model::search::full_text::FullTextSearchResult;
+use crate::model::search::vector::VectorSearchResult;
 use url::Url;
 
 pub struct TextSearchData(pub String);
@@ -46,23 +51,7 @@ pub enum SearchModel {
     Item(ItemSearchModel),
 }
 
-/// 文本的搜索结果
-pub struct TextSearchResult {
-    // 命中记录的 ID
-    pub id: String,
-    // 命中记录的结果
-    pub data: String,
-    // 搜索的关键词，分数
-    pub score: Vec<(String, f32)>,
-}
-
-/// 图片的搜索结果
-pub struct ImageSearchResult {
-    pub id: String,
-}
-
-/// 搜索的结果
 pub enum SearchResult {
-    Text(Vec<TextSearchResult>),
-    Image(Vec<ImageSearchResult>),
+    Vector(VectorSearchResult),
+    FullText(FullTextSearchResult),
 }

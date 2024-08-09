@@ -1,18 +1,17 @@
-use crate::model::search::TextSearchResult;
+use crate::model::search::full_text::FullTextSearchResult;
 use serde::Deserialize;
 use std::collections::HashMap;
 use surrealdb::sql::Thing;
 
 #[derive(Debug, Deserialize)]
-pub(crate) struct TextEntity {
+pub(crate) struct FullTextSearchEntity {
     id: Thing,
-    data: String,
     #[serde(flatten)]
     scores: HashMap<String, f32>,
 }
 
-impl TextEntity {
-    pub fn convert_to_result(&self, data: Vec<String>) -> TextSearchResult {
+impl FullTextSearchEntity {
+    pub fn convert_to_result(&self, data: &Vec<String>) -> FullTextSearchResult {
         let score = data
             .iter()
             .enumerate()
@@ -26,10 +25,9 @@ impl TextEntity {
                 )
             })
             .collect();
-        TextSearchResult {
+        FullTextSearchResult {
             id: self.id.id.to_string(),
             score,
-            data: self.data.clone(),
         }
     }
 }
