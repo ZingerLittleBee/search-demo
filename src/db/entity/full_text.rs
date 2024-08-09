@@ -26,7 +26,7 @@ impl FullTextSearchEntity {
             })
             .collect();
         FullTextSearchResult {
-            id: self.id.id.to_string(),
+            id: self.id.clone().into(),
             score,
         }
     }

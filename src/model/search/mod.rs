@@ -55,3 +55,37 @@ pub enum SearchResult {
     Vector(VectorSearchResult),
     FullText(FullTextSearchResult),
 }
+
+// table
+pub enum TB {
+    Text,
+    Image,
+}
+
+impl From<&str> for TB {
+    fn from(value: &str) -> Self {
+        match value {
+            "text" => TB::Text,
+            "image" => TB::Image,
+            _ => TB::Text,
+        }
+    }
+}
+
+pub struct ID {
+    id: String,
+    tb: TB,
+}
+
+impl ID {
+    pub fn new(id: String, tb: &str) -> Self {
+        Self { id, tb: tb.into() }
+    }
+
+    pub fn table_name(&self) -> &str {
+        match self.tb {
+            TB::Text => "text",
+            TB::Image => "image",
+        }
+    }
+}

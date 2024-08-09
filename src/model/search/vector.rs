@@ -1,17 +1,6 @@
-pub struct TextVectorResult {
-    pub id: String,
-    pub distance: f32,
-    pub data: String,
-}
+use crate::model::search::ID;
 
-pub struct ImageVectorResult {
-    pub id: String,
+pub struct VectorSearchResult {
+    pub id: ID,
     pub distance: f32,
-    pub url: String,
-    pub prompt: String,
-}
-
-pub enum VectorSearchResult {
-    Text(Vec<TextVectorResult>),
-    Image(Vec<ImageVectorResult>),
 }

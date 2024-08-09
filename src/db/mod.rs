@@ -199,7 +199,7 @@ impl DB {
     async fn vector_search(&self, data: Vec<f32>) -> anyhow::Result<()> {
         let mut res = self
             .client
-            .query("SELECT id, data FROM text WHERE vector <|10,40|> $vector;")
+            .query("SELECT id FROM text WHERE vector <|10,40|> $vector;")
             .bind(("vector", data))
             .await?;
 

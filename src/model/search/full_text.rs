@@ -1,5 +1,7 @@
+use crate::model::search::ID;
+
 pub struct FullTextSearchResult {
-    pub id: String,
+    pub id: ID,
     // 分词，分数
     pub score: Vec<(String, f32)>,
 }
