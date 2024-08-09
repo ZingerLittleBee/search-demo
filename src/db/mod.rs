@@ -79,7 +79,8 @@ impl DB {
         CREATE image CONTENT {
 	        url: $url,
 	        prompt: $prompt,
-            vector: $vector
+            vector: $vector,
+            prompt_vector: $prompt_vector
         }",
             )
             .bind(input)
@@ -272,10 +273,12 @@ mod test {
     #[tokio::test]
     async fn test_insert_image() {
         let db = setup().await;
+        let handler = crate::state::data_handler::DataHandler::new().await;
         let image = crate::model::ImageModel {
             url: "https://example.com".to_string(),
             prompt: "hello world".to_string(),
             vector: gen_vector(),
+            prompt_vector: handler.get_text_embedding("hello world").await.unwrap()
         };
         db.insert_image(image).await.unwrap();
         let res = db
@@ -289,6 +292,7 @@ mod test {
     #[tokio::test]
     async fn test_insert_item() {
         let db = setup().await;
+        let handler = crate::state::data_handler::DataHandler::new().await;
         let item = ItemModel {
             text: vec![
                 crate::model::TextModel {
@@ -305,11 +309,13 @@ mod test {
                     url: "https://example.com".to_string(),
                     prompt: "What is in this picture?".to_string(),
                     vector: gen_vector(),
+                    prompt_vector: handler.get_text_embedding("What is in this picture?").await.unwrap()
                 },
                 crate::model::ImageModel {
                     url: "https://example.com2".to_string(),
                     prompt: "What is in this picture2?".to_string(),
                     vector: gen_vector(),
+                    prompt_vector: handler.get_text_embedding("What is in this picture2?").await.unwrap()
                 },
             ],
         };
@@ -357,9 +363,9 @@ mod test {
         let db = setup().await;
         let handler = crate::state::data_handler::DataHandler::new().await;
         let test_data = "hello world";
-        let test_data2 = "hello world222";
+        // let test_data2 = "hello world222";
         let embedding_text = handler.get_text_embedding(test_data).await.unwrap();
-        let embedding_text2 = handler.get_text_embedding(test_data2).await.unwrap();
+        // let embedding_text2 = handler.get_text_embedding(test_data2).await.unwrap();
         // db.insert_text(crate::model::TextModel {
         //     data: test_data.to_string(),
         //     vector: embedding_text.clone(),

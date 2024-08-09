@@ -15,8 +15,10 @@ DEFINE FIELD IF NOT EXISTS vector ON TABLE text TYPE array;
 DEFINE TABLE IF NOT EXISTS image;
 -- 定义 "image" 表的字段
 DEFINE FIELD IF NOT EXISTS url ON TABLE image TYPE string;
+-- image vector
 DEFINE FIELD IF NOT EXISTS vector ON TABLE image TYPE array;
 DEFINE FIELD IF NOT EXISTS prompt ON TABLE image TYPE string;
+DEFINE FIELD IF NOT EXISTS prompt_vector ON TABLE image TYPE array;
 
 -- 创建 "frame" 表
 DEFINE TABLE IF NOT EXISTS frame;
@@ -33,6 +35,7 @@ DEFINE FIELD IF NOT EXISTS frame ON TABLE video TYPE array<record<frame>>;
 
 -- 定义向量索引
 DEFINE INDEX IF NOT EXISTS idx_text_vector_hnsw_d512 ON text FIELDS vector HNSW DIMENSION 512 DIST EUCLIDEAN;
+DEFINE INDEX IF NOT EXISTS idx_image_prompt_vector_hnsw_d512 ON image FIELDS prompt_vector HNSW DIMENSION 512 DIST EUCLIDEAN;
 DEFINE INDEX IF NOT EXISTS idx_image_vector_hnsw_d512 ON image FIELDS vector HNSW DIMENSION 512 DIST EUCLIDEAN;
 
 -- 定义分词器

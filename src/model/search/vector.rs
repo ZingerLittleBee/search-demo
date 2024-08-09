@@ -9,6 +9,7 @@ pub struct VectorSearchResult {
 pub enum VectorSearchTable {
     Text,
     Image,
+    ImagePrompt,
 }
 
 impl VectorSearchTable {
@@ -16,6 +17,7 @@ impl VectorSearchTable {
         match self {
             VectorSearchTable::Text => "text",
             VectorSearchTable::Image => "image",
+            VectorSearchTable::ImagePrompt => "image",
         }
     }
 
@@ -23,9 +25,13 @@ impl VectorSearchTable {
         match self {
             VectorSearchTable::Text => "vector",
             VectorSearchTable::Image => "vector",
+            VectorSearchTable::ImagePrompt => "prompt_vector",
         }
     }
 }
 
-pub const VECTOR_SEARCH_TABLE: [VectorSearchTable; 2] =
-    [VectorSearchTable::Text, VectorSearchTable::Image];
+pub const VECTOR_SEARCH_TABLE: [VectorSearchTable; 3] = [
+    VectorSearchTable::Text,
+    VectorSearchTable::Image,
+    VectorSearchTable::ImagePrompt,
+];

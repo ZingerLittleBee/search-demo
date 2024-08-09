@@ -76,10 +76,16 @@ impl DataHandler {
             .clip
             .get_image_embedding_from_image(&image.to_rgb8())
             .await?;
+        let prompt_vector = self
+            .clip
+            .get_text_embedding(prompt.as_str())
+            .await?
+            .to_vec();
         Ok(ImageModel {
             url: input.url.to_string(),
             prompt,
             vector: vector.to_vec(),
+            prompt_vector,
         })
     }
 
