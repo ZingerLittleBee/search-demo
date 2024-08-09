@@ -1,9 +1,9 @@
 services:
   surrealdb:
     container_name: muse-surrealdb
-    image: surrealdb/surrealdb:latest
+    image: surrealdb/surrealdb:v2.0.0-alpha.9
     restart: always
-    command: start --auth --user ${DATABASE_USER} --pass ${DATABASE_PASSWORD} --log trace file:/mydata/mydatabase.db
+    command: start -u ${DATABASE_USER} -p ${DATABASE_PASSWORD} --log trace file:/mydata/mydatabase.db
     user: root
     volumes:
       - surrealdb-data:/mydata/mydatabase.db
