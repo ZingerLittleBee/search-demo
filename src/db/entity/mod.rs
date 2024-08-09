@@ -1,1 +1,1 @@
-pub(crate) mod text;
+pub(crate) mod full_text;

@@ -2,8 +2,8 @@ pub(crate) mod data_handler;
 
 use crate::db::DB;
 use crate::model::input::InputData;
-use crate::model::search::{SearchData, SearchModel};
 use crate::model::DataModel;
+use crate::model::search::{SearchData, SearchModel};
 
 pub struct AppState {
     pub db: DB,

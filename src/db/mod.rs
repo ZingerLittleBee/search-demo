@@ -4,12 +4,11 @@ mod sql;
 use crate::constant::{
     DATABASE_HOST, DATABASE_NAME, DATABASE_NS, DATABASE_PASSWORD, DATABASE_PORT, DATABASE_USER,
 };
-use crate::db::entity::text::TextEntity;
+use crate::db::entity::full_text::FullTextSearchEntity;
 use crate::db::sql::CREATE_TABLE;
-use crate::model::search::{
-    ImageSearchModel, ItemSearchModel, TextSearchModel, TextSearchResult, TextToken,
-};
+use crate::model::search::full_text::{FullTextSearchResult, FULL_TEXT_SEARCH_TABLE};
 use crate::model::{ImageModel, ItemModel, TextModel};
+use futures::future::join_all;
 use std::env;
 use surrealdb::{
     engine::remote::ws::{Client, Ws},
@@ -148,33 +147,55 @@ impl DB {
     }
 }
 
-// 🔍 搜索实现
+// 🔍 全文搜索实现
 impl DB {
-    async fn full_text_search(&self, data: Vec<String>) -> anyhow::Result<Vec<TextSearchResult>> {
-        let param_sql = |data: (usize, &String)| -> (String, String) {
-            (
-                format!("search::score({}) AS score_{}", data.0, data.0),
-                format!("data @{}@ '{}'", data.0, data.1),
-            )
-        };
+    async fn full_text_search(
+        &self,
+        data: Vec<String>,
+    ) -> anyhow::Result<Vec<FullTextSearchResult>> {
+        let futures = FULL_TEXT_SEARCH_TABLE.iter().map(|table| {
+            let param_sql = |data: (usize, &String)| -> (String, String) {
+                (
+                    format!("search::score({}) AS score_{}", data.0, data.0),
+                    format!("{} @{}@ '{}'", table.column_name(), data.0, data.1),
+                )
+            };
 
-        let (search_scores, where_clauses): (Vec<_>, Vec<_>) =
-            data.iter().enumerate().map(param_sql).unzip();
+            let (search_scores, where_clauses): (Vec<_>, Vec<_>) =
+                data.iter().enumerate().map(param_sql).unzip();
 
-        let sql = format!(
-            "SELECT id, data, {} FROM text WHERE {};",
-            search_scores.join(", "),
-            where_clauses.join(" AND ")
-        );
-        debug!("full text search sql: {}", sql);
-        let text: Vec<TextEntity> = self.client.query(&sql).await?.take(0)?;
+            let sql = format!(
+                "SELECT id, {} FROM {} WHERE {};",
+                search_scores.join(", "),
+                table.table_name(),
+                where_clauses.join(" AND ")
+            );
+            debug!("full-text search sql: {}", sql);
 
-        Ok(text
-            .iter()
-            .map(|t| t.convert_to_result(data.clone()))
-            .collect())
+            let data = data.clone();
+            async move {
+                let text: Vec<FullTextSearchEntity> = self.client.query(&sql).await?.take(0)?;
+                Ok::<_, anyhow::Error>(
+                    text.iter()
+                        .map(|t| t.convert_to_result(&data))
+                        .collect::<Vec<_>>(),
+                )
+            }
+        });
+
+        let res: Vec<FullTextSearchResult> = join_all(futures)
+            .await
+            .into_iter()
+            .collect::<anyhow::Result<Vec<_>>>()?
+            .into_iter()
+            .flatten()
+            .collect();
+        Ok(res)
     }
+}
 
+// 🔍 向量搜索实现
+impl DB {
     async fn vector_search(&self, data: Vec<f32>) -> anyhow::Result<()> {
         let mut res = self
             .client
@@ -187,26 +208,11 @@ impl DB {
 
         Ok(())
     }
-
-    pub async fn search_text(&self, data: TextSearchModel) -> anyhow::Result<()> {
-        // 1. 全文搜索
-        // 2. 向量搜索
-        Ok(())
-    }
-
-    pub async fn search_image(&self, data: ImageSearchModel) -> anyhow::Result<()> {
-        Ok(())
-    }
-
-    pub async fn search_item(&self, data: ItemSearchModel) -> anyhow::Result<()> {
-        Ok(())
-    }
 }
 
 mod test {
     use crate::model::ItemModel;
     use dotenvy::dotenv;
-    use futures::stream::iter;
     use rand::Rng;
     use tracing_subscriber::EnvFilter;
 
@@ -328,13 +334,21 @@ mod test {
         let db = setup().await;
         let handler = crate::state::data_handler::DataHandler::new().await;
         let test_data = "hello world";
+        let test_data2 = "hello world222";
         let embedding_text = handler.get_text_embedding(test_data).await.unwrap();
-        db.insert_text(crate::model::TextModel {
-            data: test_data.to_string(),
-            vector: embedding_text.clone(),
-        })
-        .await
-        .unwrap();
+        let embedding_text2 = handler.get_text_embedding(test_data2).await.unwrap();
+        // db.insert_text(crate::model::TextModel {
+        //     data: test_data.to_string(),
+        //     vector: embedding_text.clone(),
+        // })
+        // .await
+        // .unwrap();
+        // db.insert_text(crate::model::TextModel {
+        //     data: test_data2.to_string(),
+        //     vector: embedding_text2.clone(),
+        // })
+        // .await
+        // .unwrap();
         db.vector_search(embedding_text).await.unwrap();
     }
 }
