@@ -2,8 +2,9 @@ pub(crate) mod data_handler;
 
 use crate::db::DB;
 use crate::model::input::InputData;
-use crate::model::DataModel;
 use crate::model::search::{SearchData, SearchModel};
+use crate::model::DataModel;
+use crate::rank::{Rank, RankResult};
 
 pub struct AppState {
     pub db: DB,
@@ -33,7 +34,27 @@ impl AppState {
     // 数据查询
     pub async fn search(&self, input: SearchData) -> anyhow::Result<()> {
         match self.data_handler.handle_search_data(input).await? {
-            SearchModel::Text(_) => {}
+            SearchModel::Text(text) => {
+                let vector = self
+                    .data_handler
+                    .get_text_embedding(text.data.as_str())
+                    .await?;
+                let tokens = self.data_handler.tokenizer(text.data.as_str()).await?;
+                let full_text_result = self.db.full_text_search(tokens).await?;
+                let vector_result = self.db.vector_search(vector, None).await?;
+                let mut search_ids = vec![];
+                search_ids.extend_from_slice(
+                    &Rank::full_text_rank(full_text_result)?
+                        .drain(..3)
+                        .collect::<Vec<RankResult>>(),
+                );
+                search_ids.extend_from_slice(
+                    &Rank::vector_rank(vector_result)?
+                        .drain(..3)
+                        .collect::<Vec<RankResult>>(),
+                );
+                // TODO: select * from db where id in search_ids
+            }
             SearchModel::Image(_) => {}
             SearchModel::Item(_) => {}
         }

@@ -48,12 +48,21 @@ impl DataHandler {
 
     /// TODO
     /// 暂时只针对英文简单以空格分隔
-    async fn tokenizer(&self, data: &str) -> anyhow::Result<Vec<String>> {
+    pub async fn tokenizer(&self, data: &str) -> anyhow::Result<Vec<String>> {
         Ok(data.split(" ").map(|s| s.to_string()).collect())
     }
 
-    pub(crate) async fn get_text_embedding(&self, data: &str) -> anyhow::Result<Vec<f32>> {
+    pub async fn get_text_embedding(&self, data: &str) -> anyhow::Result<Vec<f32>> {
         Ok(self.clip.get_text_embedding(data).await?.to_vec())
+    }
+
+    pub async fn get_image_embedding(&self, data: &[u8]) -> anyhow::Result<Vec<f32>> {
+        let image = image::load_from_memory(data)?;
+        Ok(self
+            .clip
+            .get_image_embedding_from_image(&image.to_rgb8())
+            .await?
+            .to_vec())
     }
 }
 
@@ -146,11 +155,7 @@ impl DataHandler {
         input: &ImageSearchData,
     ) -> anyhow::Result<ImageSearchModel> {
         let prompt = image_to_prompt(input.data.as_slice()).await?;
-        let image = image::load_from_memory(input.data.as_slice())?;
-        let vector = self
-            .clip
-            .get_image_embedding_from_image(&image.to_rgb8())
-            .await?;
+        self.get_image_embedding(input.data.as_slice()).await?;
         Ok(ImageSearchModel {
             url: input.url.to_string(),
             prompt: prompt.clone(),

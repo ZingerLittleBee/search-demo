@@ -152,7 +152,7 @@ impl DB {
 
 // 🔍 全文搜索实现
 impl DB {
-    async fn full_text_search(
+    pub async fn full_text_search(
         &self,
         data: Vec<String>,
     ) -> anyhow::Result<Vec<FullTextSearchResult>> {
@@ -199,7 +199,7 @@ impl DB {
 
 // 🔍 向量搜索实现
 impl DB {
-    async fn vector_search(
+    pub async fn vector_search(
         &self,
         data: Vec<f32>,
         range: Option<&str>,

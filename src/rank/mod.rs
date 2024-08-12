@@ -4,14 +4,9 @@ use crate::model::search::ID;
 
 pub struct Rank;
 
+#[derive(Clone)]
 pub struct RankResult {
     pub id: ID,
-}
-
-impl Rank {
-    pub fn new() -> Self {
-        Self
-    }
 }
 
 impl Rank {
