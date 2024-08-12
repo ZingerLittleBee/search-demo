@@ -6,9 +6,11 @@ use crate::constant::{
 };
 use crate::db::entity::full_text::FullTextSearchEntity;
 use crate::db::entity::vector::VectorSearchEntity;
+use crate::db::entity::{ImageEntity, ItemEntity, TextEntity};
 use crate::db::sql::CREATE_TABLE;
 use crate::model::search::full_text::{FullTextSearchResult, FULL_TEXT_SEARCH_TABLE};
 use crate::model::search::vector::{VectorSearchResult, VECTOR_SEARCH_TABLE};
+use crate::model::search::ID;
 use crate::model::{ImageModel, ItemModel, TextModel};
 use futures::future::join_all;
 use std::env;
@@ -239,6 +241,47 @@ impl DB {
     }
 }
 
+// 数据查询
+impl DB {
+    /// ids: 只包含 text 和 image 表的 ID
+    pub async fn select_by_id(&self, ids: Vec<ID>) {}
+
+    async fn select_relation(&self, ids: Vec<&str>) {}
+
+    async fn select_text(&self, ids: Vec<&str>) -> anyhow::Result<Vec<TextEntity>> {
+        let mut resp = self
+            .client
+            .query(format!(
+                "SELECT * FROM text WHERE id in [{}];",
+                ids.join(", ")
+            ))
+            .await?;
+        Ok(resp.take::<Vec<TextEntity>>(0)?)
+    }
+
+    async fn select_image(&self, ids: Vec<&str>) -> anyhow::Result<Vec<ImageEntity>> {
+        let mut resp = self
+            .client
+            .query(format!(
+                "SELECT * FROM image WHERE id in [{}];",
+                ids.join(", ")
+            ))
+            .await?;
+        Ok(resp.take::<Vec<ImageEntity>>(0)?)
+    }
+
+    async fn select_item(&self, id: Vec<&str>) -> anyhow::Result<Vec<ItemEntity>> {
+        let mut resp = self
+            .client
+            .query(format!(
+                "SELECT * FROM item WHERE id in [{}] FETCH text, image;",
+                id.join(", ")
+            ))
+            .await?;
+        Ok(resp.take::<Vec<ItemEntity>>(0)?)
+    }
+}
+
 mod test {
     use crate::model::ItemModel;
     use dotenvy::dotenv;
@@ -393,5 +436,32 @@ mod test {
             "vector_search: {:?}",
             db.vector_search(embedding_text, None).await.unwrap()
         );
+    }
+
+    #[tokio::test]
+    async fn test_select_text() {
+        let db = setup().await;
+        let ids = vec!["text:kobjmx4b0csfcdr2b2yp", "text:bfqqsxn3oa6ah395tbq5"];
+        let res = db.select_text(ids).await.unwrap();
+        println!("res: {:?}", res);
+        assert!(res.len() >= 2);
+    }
+
+    #[tokio::test]
+    async fn test_select_image() {
+        let db = setup().await;
+        let ids = vec!["image:7juby5xev13458xmwaf4", "image:7nlycejva0pbyv9kcgyw"];
+        let res = db.select_image(ids).await.unwrap();
+        println!("res: {:?}", res);
+        assert!(res.len() >= 2);
+    }
+
+    #[tokio::test]
+    async fn test_select_item() {
+        let db = setup().await;
+        let ids = vec!["item:im4q7cwxlavqlgl8svgc"];
+        let res = db.select_item(ids).await.unwrap();
+        println!("res: {:?}", res);
+        assert!(res.len() >= 1);
     }
 }
