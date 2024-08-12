@@ -3,6 +3,7 @@ mod db;
 mod constant;
 pub mod model;
 mod state;
+mod rank;
 
 use axum::response::Html;
 use axum::routing::get;

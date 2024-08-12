@@ -325,34 +325,34 @@ mod test {
     #[tokio::test]
     async fn test_full_text_search() {
         let db = setup().await;
-        let handler = crate::state::data_handler::DataHandler::new().await;
-        db.insert_text(crate::model::TextModel {
-            data: "Rust Web Programming".to_string(),
-            vector: handler
-                .get_text_embedding("Rust Web Programming")
-                .await
-                .unwrap(),
-        })
-        .await
-        .unwrap();
-        db.insert_text(crate::model::TextModel {
-            data: "Rust Web Programming2222".to_string(),
-            vector: handler
-                .get_text_embedding("Rust Web Programming2222")
-                .await
-                .unwrap(),
-        })
-        .await
-        .unwrap();
-        db.insert_text(crate::model::TextModel {
-            data: "Rust Web Programming3333".to_string(),
-            vector: handler
-                .get_text_embedding("Rust Web Programming3333")
-                .await
-                .unwrap(),
-        })
-        .await
-        .unwrap();
+        // let handler = crate::state::data_handler::DataHandler::new().await;
+        // db.insert_text(crate::model::TextModel {
+        //     data: "Rust Web Programming".to_string(),
+        //     vector: handler
+        //         .get_text_embedding("Rust Web Programming")
+        //         .await
+        //         .unwrap(),
+        // })
+        // .await
+        // .unwrap();
+        // db.insert_text(crate::model::TextModel {
+        //     data: "Rust Web Programming2222".to_string(),
+        //     vector: handler
+        //         .get_text_embedding("Rust Web Programming2222")
+        //         .await
+        //         .unwrap(),
+        // })
+        // .await
+        // .unwrap();
+        // db.insert_text(crate::model::TextModel {
+        //     data: "Rust Web Programming3333".to_string(),
+        //     vector: handler
+        //         .get_text_embedding("Rust Web Programming3333")
+        //         .await
+        //         .unwrap(),
+        // })
+        // .await
+        // .unwrap();
 
         let data = vec!["rust".to_string(), "Programming3333".to_string()];
         assert!(db.full_text_search(data).await.unwrap().len() >= 1);
@@ -379,7 +379,7 @@ mod test {
         // .await
         // .unwrap();
         println!(
-            "{:?}",
+            "vector_search: {:?}",
             db.vector_search(embedding_text, None).await.unwrap()
         );
     }

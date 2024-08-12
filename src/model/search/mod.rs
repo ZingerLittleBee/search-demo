@@ -57,7 +57,7 @@ pub enum SearchResult {
 }
 
 // table
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TB {
     Text,
     Image,
@@ -73,7 +73,7 @@ impl From<&str> for TB {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ID {
     id: String,
     tb: TB,
@@ -89,5 +89,13 @@ impl ID {
             TB::Text => "text",
             TB::Image => "image",
         }
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn tb(&self) -> &TB {
+        &self.tb
     }
 }
