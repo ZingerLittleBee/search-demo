@@ -35,8 +35,8 @@ pub struct ItemEntity {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct ItemRelationEntity {
+pub struct ContainRelationEntity {
     id: Thing,
-    r#in: String,
-    out: String,
+    r#in: Thing,
+    out: Thing,
 }

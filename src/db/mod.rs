@@ -6,7 +6,7 @@ use crate::constant::{
 };
 use crate::db::entity::full_text::FullTextSearchEntity;
 use crate::db::entity::vector::VectorSearchEntity;
-use crate::db::entity::{ImageEntity, ItemEntity, TextEntity};
+use crate::db::entity::{ContainRelationEntity, ImageEntity, ItemEntity, TextEntity};
 use crate::db::sql::CREATE_TABLE;
 use crate::model::search::full_text::{FullTextSearchResult, FULL_TEXT_SEARCH_TABLE};
 use crate::model::search::vector::{VectorSearchResult, VECTOR_SEARCH_TABLE};
@@ -246,7 +246,19 @@ impl DB {
     /// ids: 只包含 text 和 image 表的 ID
     pub async fn select_by_id(&self, ids: Vec<ID>) {}
 
-    async fn select_relation(&self, ids: Vec<&str>) {}
+    async fn select_relation_by_out(
+        &self,
+        ids: Vec<&str>,
+    ) -> anyhow::Result<Vec<ContainRelationEntity>> {
+        let mut resp = self
+            .client
+            .query(format!(
+                "SELECT * from contains where out in [{}];",
+                ids.join(", ")
+            ))
+            .await?;
+        Ok(resp.take::<Vec<ContainRelationEntity>>(0)?)
+    }
 
     async fn select_text(&self, ids: Vec<&str>) -> anyhow::Result<Vec<TextEntity>> {
         let mut resp = self
@@ -461,6 +473,15 @@ mod test {
         let db = setup().await;
         let ids = vec!["item:im4q7cwxlavqlgl8svgc"];
         let res = db.select_item(ids).await.unwrap();
+        println!("res: {:?}", res);
+        assert!(res.len() >= 1);
+    }
+
+    #[tokio::test]
+    async fn test_select_relation() {
+        let db = setup().await;
+        let ids = vec!["text:kobjmx4b0csfcdr2b2yp"];
+        let res = db.select_relation_by_out(ids).await.unwrap();
         println!("res: {:?}", res);
         assert!(res.len() >= 1);
     }
