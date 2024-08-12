@@ -109,12 +109,17 @@ impl DB {
         });
         input.image.iter().enumerate().for_each(|(i, image)| {
             create_image_sql_vec.push(format!(
-                "LET $image_{} = (CREATE ONLY image CONTENT {{url: '{}', prompt: '{}', vector: [{}]}}).id;",
+                "LET $image_{} = (CREATE ONLY image CONTENT {{url: '{}', prompt: '{}', vector: [{}], prompt_vector: [{}]}}).id;",
                 i,
                 image.url,
                 image.prompt,
                 image
                     .vector
+                    .iter()
+                    .map(|v| v.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", "),
+                image.prompt_vector
                     .iter()
                     .map(|v| v.to_string())
                     .collect::<Vec<String>>()
@@ -278,7 +283,7 @@ mod test {
             url: "https://example.com".to_string(),
             prompt: "hello world".to_string(),
             vector: gen_vector(),
-            prompt_vector: handler.get_text_embedding("hello world").await.unwrap()
+            prompt_vector: handler.get_text_embedding("hello world").await.unwrap(),
         };
         db.insert_image(image).await.unwrap();
         let res = db
@@ -297,11 +302,11 @@ mod test {
             text: vec![
                 crate::model::TextModel {
                     data: "Hello, World!".to_string(),
-                    vector: gen_vector(),
+                    vector: handler.get_text_embedding("Hello, World!").await.unwrap(),
                 },
                 crate::model::TextModel {
                     data: "Hello, World2!".to_string(),
-                    vector: gen_vector(),
+                    vector: handler.get_text_embedding("Hello, World2!").await.unwrap(),
                 },
             ],
             image: vec![
@@ -309,13 +314,19 @@ mod test {
                     url: "https://example.com".to_string(),
                     prompt: "What is in this picture?".to_string(),
                     vector: gen_vector(),
-                    prompt_vector: handler.get_text_embedding("What is in this picture?").await.unwrap()
+                    prompt_vector: handler
+                        .get_text_embedding("What is in this picture?")
+                        .await
+                        .unwrap(),
                 },
                 crate::model::ImageModel {
                     url: "https://example.com2".to_string(),
                     prompt: "What is in this picture2?".to_string(),
                     vector: gen_vector(),
-                    prompt_vector: handler.get_text_embedding("What is in this picture2?").await.unwrap()
+                    prompt_vector: handler
+                        .get_text_embedding("What is in this picture2?")
+                        .await
+                        .unwrap(),
                 },
             ],
         };

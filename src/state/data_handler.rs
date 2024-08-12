@@ -168,7 +168,7 @@ impl DataHandler {
                     .await?
                     .to_vec(),
             },
-            vector: vector.to_vec(),
+            vector: self.get_image_embedding(input.data.as_slice()).await?,
         })
     }
 
