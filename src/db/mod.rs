@@ -6,11 +6,13 @@ use crate::constant::{
 };
 use crate::db::entity::full_text::FullTextSearchEntity;
 use crate::db::entity::vector::VectorSearchEntity;
-use crate::db::entity::{ContainRelationEntity, ImageEntity, ItemEntity, TextEntity};
+use crate::db::entity::{
+    ContainRelationEntity, ImageEntity, ItemEntity, SelectResultEntity, TextEntity,
+};
 use crate::db::sql::CREATE_TABLE;
 use crate::model::search::full_text::{FullTextSearchResult, FULL_TEXT_SEARCH_TABLE};
 use crate::model::search::vector::{VectorSearchResult, VECTOR_SEARCH_TABLE};
-use crate::model::search::ID;
+use crate::model::search::{ID, TB};
 use crate::model::{ImageModel, ItemModel, TextModel};
 use futures::future::join_all;
 use std::env;
@@ -244,7 +246,49 @@ impl DB {
 // 数据查询
 impl DB {
     /// ids: 只包含 text 和 image 表的 ID
-    pub async fn select_by_id(&self, ids: Vec<ID>) {}
+    pub async fn select_by_id(&self, ids: Vec<ID>) -> anyhow::Result<Vec<SelectResultEntity>> {
+        let mut text_ids = vec![];
+        let mut image_ids = vec![];
+        let mut item_ids = vec![];
+
+        ids.iter().for_each(|id| match id.tb() {
+            TB::Text => text_ids.push(id.id()),
+            TB::Image => image_ids.push(id.id()),
+        });
+
+        let outs = text_ids.iter().chain(image_ids.iter()).cloned().collect();
+        let relation = self.select_relation_by_out(outs).await?;
+
+        let mut contain_by_item_ids = vec![];
+
+        relation.iter().for_each(|r| {
+            item_ids.push(r.in_id());
+            println!("r.out_id(): {:?}", r.out_id());
+            contain_by_item_ids.push(r.out_id());
+        });
+
+        text_ids = text_ids
+            .into_iter()
+            .filter(|id| !contain_by_item_ids.contains(&id.to_string()))
+            .collect();
+
+        image_ids = image_ids
+            .into_iter()
+            .filter(|id| !contain_by_item_ids.contains(&id.to_string()))
+            .collect();
+
+        println!("image_ids: {:?}", image_ids);
+
+        let text = self.select_text(text_ids).await?;
+        let image = self.select_image(image_ids).await?;
+        let item = self.select_item(item_ids).await?;
+
+        let mut res = vec![];
+        res.extend(text.into_iter().map(SelectResultEntity::Text));
+        res.extend(image.into_iter().map(SelectResultEntity::Image));
+        res.extend(item.into_iter().map(SelectResultEntity::Item));
+        Ok(res)
+    }
 
     async fn select_relation_by_out(
         &self,
@@ -260,34 +304,43 @@ impl DB {
         Ok(resp.take::<Vec<ContainRelationEntity>>(0)?)
     }
 
-    async fn select_text(&self, ids: Vec<&str>) -> anyhow::Result<Vec<TextEntity>> {
+    async fn select_text(&self, ids: Vec<impl AsRef<str>>) -> anyhow::Result<Vec<TextEntity>> {
         let mut resp = self
             .client
             .query(format!(
                 "SELECT * FROM text WHERE id in [{}];",
-                ids.join(", ")
+                ids.iter()
+                    .map(|i| i.as_ref())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ))
             .await?;
         Ok(resp.take::<Vec<TextEntity>>(0)?)
     }
 
-    async fn select_image(&self, ids: Vec<&str>) -> anyhow::Result<Vec<ImageEntity>> {
+    async fn select_image(&self, ids: Vec<impl AsRef<str>>) -> anyhow::Result<Vec<ImageEntity>> {
         let mut resp = self
             .client
             .query(format!(
                 "SELECT * FROM image WHERE id in [{}];",
-                ids.join(", ")
+                ids.iter()
+                    .map(|i| i.as_ref())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ))
             .await?;
         Ok(resp.take::<Vec<ImageEntity>>(0)?)
     }
 
-    async fn select_item(&self, id: Vec<&str>) -> anyhow::Result<Vec<ItemEntity>> {
+    async fn select_item(&self, ids: Vec<impl AsRef<str>>) -> anyhow::Result<Vec<ItemEntity>> {
         let mut resp = self
             .client
             .query(format!(
                 "SELECT * FROM item WHERE id in [{}] FETCH text, image;",
-                id.join(", ")
+                ids.iter()
+                    .map(|i| i.as_ref())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ))
             .await?;
         Ok(resp.take::<Vec<ItemEntity>>(0)?)
@@ -484,5 +537,19 @@ mod test {
         let res = db.select_relation_by_out(ids).await.unwrap();
         println!("res: {:?}", res);
         assert!(res.len() >= 1);
+    }
+
+    #[tokio::test]
+    async fn test_select_by_id() {
+        let db = setup().await;
+        let ids = vec![
+            crate::model::search::ID::new("text:kobjmx4b0csfcdr2b2yp".to_string(), "text"),
+            crate::model::search::ID::new("image:vsiffo113141wrewrwer".to_string(), "image"),
+            crate::model::search::ID::new("image:7nlycejva0pbyv9kcgyw".to_string(), "image"),
+            crate::model::search::ID::new("image:7juby5xev13458xmwaf4".to_string(), "image"),
+        ];
+        let res = db.select_by_id(ids).await.unwrap();
+        println!("res: {:?}", res);
+        println!("res len: {}", res.len())
     }
 }

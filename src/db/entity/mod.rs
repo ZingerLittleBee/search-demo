@@ -1,4 +1,5 @@
 use crate::model::search::ID;
+use crate::vo::{ImageVo, ItemVo, SelectResultVo, TextVo};
 use serde::Deserialize;
 use surrealdb::sql::Thing;
 
@@ -34,9 +35,68 @@ pub struct ItemEntity {
     image: Vec<ImageEntity>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ContainRelationEntity {
     id: Thing,
     r#in: Thing,
     out: Thing,
+}
+
+impl ContainRelationEntity {
+    pub fn in_id(&self) -> String {
+        format!("{}:{}", self.r#in.tb, self.r#in.id.to_raw())
+    }
+
+    pub fn out_id(&self) -> String {
+        format!("{}:{}", self.out.tb, self.out.id.to_raw())
+    }
+}
+
+#[derive(Debug)]
+pub enum SelectResultEntity {
+    Text(TextEntity),
+    Image(ImageEntity),
+    Item(ItemEntity),
+}
+
+impl From<TextEntity> for TextVo {
+    fn from(value: TextEntity) -> Self {
+        TextVo {
+            id: value.id.id.to_raw(),
+            data: value.data,
+            vector: value.vector,
+        }
+    }
+}
+
+impl From<ImageEntity> for ImageVo {
+    fn from(value: ImageEntity) -> Self {
+        ImageVo {
+            id: value.id.id.to_raw(),
+            url: value.url,
+            prompt: value.prompt,
+            prompt_vector: value.prompt_vector,
+            vector: value.vector,
+        }
+    }
+}
+
+impl From<ItemEntity> for ItemVo {
+    fn from(value: ItemEntity) -> Self {
+        ItemVo {
+            id: value.id.id.to_raw(),
+            text: value.text.into_iter().map(TextVo::from).collect(),
+            image: value.image.into_iter().map(ImageVo::from).collect(),
+        }
+    }
+}
+
+impl From<SelectResultEntity> for SelectResultVo {
+    fn from(value: SelectResultEntity) -> Self {
+        match value {
+            SelectResultEntity::Text(text) => SelectResultVo::Text(TextVo::from(text)),
+            SelectResultEntity::Image(image) => SelectResultVo::Image(ImageVo::from(image)),
+            SelectResultEntity::Item(item) => SelectResultVo::Item(ItemVo::from(item)),
+        }
+    }
 }

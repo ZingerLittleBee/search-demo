@@ -57,7 +57,7 @@ pub enum SearchResult {
 }
 
 // table
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum TB {
     Text,
     Image,

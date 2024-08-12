@@ -5,6 +5,7 @@ use crate::model::input::InputData;
 use crate::model::search::{SearchData, SearchModel};
 use crate::model::DataModel;
 use crate::rank::{Rank, RankResult};
+use crate::vo::SelectResultVo;
 
 pub struct AppState {
     pub db: DB,
@@ -32,7 +33,7 @@ impl AppState {
     }
 
     // 数据查询
-    pub async fn search(&self, input: SearchData) -> anyhow::Result<()> {
+    pub async fn search(&self, input: SearchData) -> anyhow::Result<Vec<SelectResultVo>> {
         match self.data_handler.handle_search_data(input).await? {
             SearchModel::Text(text) => {
                 let vector = self
@@ -53,12 +54,18 @@ impl AppState {
                         .drain(..3)
                         .collect::<Vec<RankResult>>(),
                 );
-                // TODO: select * from db where id in search_ids
+                let select_result = self
+                    .db
+                    .select_by_id(search_ids.into_iter().map(|s| s.id).collect())
+                    .await?;
+                Ok(select_result
+                    .into_iter()
+                    .map(|s| s.into())
+                    .collect::<Vec<SelectResultVo>>())
             }
-            SearchModel::Image(_) => {}
-            SearchModel::Item(_) => {}
+            SearchModel::Image(_) => Ok(vec![]),
+            SearchModel::Item(_) => Ok(vec![]),
         }
-        Ok(())
     }
 }
 

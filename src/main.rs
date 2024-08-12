@@ -4,6 +4,7 @@ mod constant;
 pub mod model;
 mod state;
 mod rank;
+mod vo;
 
 use axum::response::Html;
 use axum::routing::get;
