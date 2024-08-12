@@ -83,4 +83,7 @@ SELECT id FROM item;
 -- 	item:1
 -- ]
 SELECT VALUE id FROM item;
+
+-- 包含 record 记录的查询
+-- SELECT * FROM item:1 FETCH text, image;
 ```
