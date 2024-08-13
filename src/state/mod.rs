@@ -2,11 +2,14 @@ pub(crate) mod data_handler;
 
 use crate::db::DB;
 use crate::model::input::InputData;
+use crate::model::search::full_text::FullTextSearchResult;
 use crate::model::search::vector::VectorSearchResult;
 use crate::model::search::{SearchData, SearchModel};
 use crate::model::DataModel;
 use crate::rank::Rank;
 use crate::vo::SelectResultVo;
+use futures_util::{stream, StreamExt};
+use tracing::error;
 
 pub struct AppState {
     pub db: DB,
@@ -73,10 +76,10 @@ impl AppState {
                 // 图片向量搜索
                 let image_vector_result = self.db.vector_search(image.vector, None).await?;
 
-                let mut search_id = vec![];
-                search_id
+                let mut search_ids = vec![];
+                search_ids
                     .extend_from_slice(&Rank::full_text_rank(prompt_full_text_result, Some(5))?);
-                search_id.extend_from_slice(&Rank::vector_rank(
+                search_ids.extend_from_slice(&Rank::vector_rank(
                     // 合并向量搜索结果
                     image_vector_result
                         .into_iter()
@@ -87,7 +90,7 @@ impl AppState {
 
                 let select_result = self
                     .db
-                    .select_by_id(search_id.into_iter().map(|s| s.id).collect())
+                    .select_by_id(search_ids.into_iter().map(|s| s.id).collect())
                     .await?;
 
                 Ok(select_result
@@ -95,7 +98,73 @@ impl AppState {
                     .map(|s| s.into())
                     .collect::<Vec<SelectResultVo>>())
             }
-            SearchModel::Item(_) => Ok(vec![]),
+            SearchModel::Item(item) => {
+                let mut full_text_result = vec![];
+                let mut vector_result = vec![];
+                let mut search_ids = vec![];
+
+                stream::iter(item.text)
+                    .then(|text| async move {
+                        Ok::<(Vec<FullTextSearchResult>, Vec<VectorSearchResult>), anyhow::Error>((
+                            self.db.full_text_search(text.tokens.0).await?,
+                            self.db.vector_search(text.vector, None).await?,
+                        ))
+                    })
+                    .collect::<Vec<_>>()
+                    .await
+                    .into_iter()
+                    .for_each(|res| match res {
+                        Ok(res) => {
+                            full_text_result.extend(res.0);
+                            vector_result.extend(res.1);
+                        }
+                        Err(e) => {
+                            error!("text search error in search item: {:?}", e);
+                        }
+                    });
+
+                stream::iter(item.image)
+                    .then(|image| async move {
+                        let mut vector_result = vec![];
+                        vector_result.extend(self.db.vector_search(image.vector, None).await?);
+                        vector_result.extend(
+                            self.db
+                                .vector_search(image.prompt_search_model.vector, None)
+                                .await?,
+                        );
+                        Ok::<(Vec<FullTextSearchResult>, Vec<VectorSearchResult>), anyhow::Error>((
+                            self.db
+                                .full_text_search(image.prompt_search_model.tokens.0)
+                                .await?,
+                            vector_result,
+                        ))
+                    })
+                    .collect::<Vec<_>>()
+                    .await
+                    .into_iter()
+                    .for_each(|res| match res {
+                        Ok(res) => {
+                            full_text_result.extend(res.0);
+                            vector_result.extend(res.1);
+                        }
+                        Err(e) => {
+                            error!("image search error in search item: {:?}", e);
+                        }
+                    });
+
+                search_ids.extend_from_slice(&Rank::full_text_rank(full_text_result, Some(5))?);
+                search_ids.extend_from_slice(&Rank::vector_rank(vector_result, Some(5))?);
+
+                let select_result = self
+                    .db
+                    .select_by_id(search_ids.into_iter().map(|s| s.id).collect())
+                    .await?;
+
+                Ok(select_result
+                    .into_iter()
+                    .map(|s| s.into())
+                    .collect::<Vec<SelectResultVo>>())
+            }
         }
     }
 }

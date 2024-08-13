@@ -3721,6 +3721,7 @@ dependencies = [
  "base64 0.22.1",
  "dotenvy",
  "futures",
+ "futures-util",
  "image",
  "ndarray",
  "ort",
