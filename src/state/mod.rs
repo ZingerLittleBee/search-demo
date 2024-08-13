@@ -170,7 +170,7 @@ impl AppState {
 }
 
 mod test {
-    use crate::model::search::{ImageSearchData, SearchData};
+    use crate::model::search::{ImageSearchData, ItemSearchData, SearchData};
     use crate::state::AppState;
     use dotenvy::dotenv;
     use tracing_subscriber::EnvFilter;
@@ -211,5 +211,21 @@ mod test {
             .await
             .unwrap();
         println!("search image: {:?}", serde_json::to_string(&res).unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_search_item() {
+        let state = setup().await;
+        let image_data = tokio::fs::read("test/image.png").await.unwrap();
+
+        let item = SearchData::Item(ItemSearchData {
+            text: vec!["hello world".to_string().into()],
+            image: vec![ImageSearchData {
+                url: "https://example.com".parse().unwrap(),
+                data: image_data,
+            }],
+        });
+        let res = state.search(item).await.unwrap();
+        println!("search item: {:?}", serde_json::to_string(&res).unwrap());
     }
 }
