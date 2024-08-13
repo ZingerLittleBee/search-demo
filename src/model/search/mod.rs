@@ -7,6 +7,12 @@ use url::Url;
 
 pub struct TextSearchData(pub String);
 
+impl From<String> for TextSearchData {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
 pub struct ImageSearchData {
     pub url: Url,
     pub data: Vec<u8>,
@@ -57,10 +63,13 @@ pub enum SearchResult {
 }
 
 // table
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Copy)]
 pub enum TB {
     Text,
     Image,
+    Item,
+    Frame,
+    Video,
 }
 
 impl From<&str> for TB {
@@ -68,6 +77,9 @@ impl From<&str> for TB {
         match value {
             "text" => TB::Text,
             "image" => TB::Image,
+            "item" => TB::Item,
+            "frame" => TB::Frame,
+            "video" => TB::Video,
             _ => TB::Text,
         }
     }
@@ -88,11 +100,14 @@ impl ID {
         match self.tb {
             TB::Text => "text",
             TB::Image => "image",
+            TB::Item => "item",
+            TB::Frame => "frame",
+            TB::Video => "video",
         }
     }
 
-    pub fn id(&self) -> &str {
-        &self.id
+    pub fn id(&self) -> String {
+        format!("{}:{}", self.table_name(), self.id)
     }
 
     pub fn tb(&self) -> &TB {

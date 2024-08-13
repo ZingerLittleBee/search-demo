@@ -4,7 +4,7 @@ use crate::model::search::ID;
 
 pub struct Rank;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RankResult {
     pub id: ID,
 }

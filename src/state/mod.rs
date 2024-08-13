@@ -70,11 +70,31 @@ impl AppState {
 }
 
 mod test {
+    use crate::model::search::SearchData;
     use crate::state::AppState;
+    use dotenvy::dotenv;
+    use tracing_subscriber::EnvFilter;
+
+    async fn setup() -> AppState {
+        dotenv().ok();
+        tracing_subscriber::fmt()
+            .with_env_filter(EnvFilter::from_default_env())
+            .init();
+        AppState::new().await
+    }
 
     #[tokio::test]
     async fn test_new() {
-        tracing_subscriber::fmt::init();
-        let _app_state = AppState::new().await;
+        setup().await;
+    }
+
+    #[tokio::test]
+    async fn test_search() {
+        let state = setup().await;
+        let res = state
+            .search(SearchData::Text("hello world".to_string().into()))
+            .await
+            .unwrap();
+        println!("res: {:?}", res);
     }
 }

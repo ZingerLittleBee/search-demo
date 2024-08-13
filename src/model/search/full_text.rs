@@ -1,5 +1,6 @@
 use crate::model::search::ID;
 
+#[derive(Debug)]
 pub struct FullTextSearchResult {
     pub id: ID,
     // 分词，分数

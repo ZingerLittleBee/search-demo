@@ -254,6 +254,7 @@ impl DB {
         ids.iter().for_each(|id| match id.tb() {
             TB::Text => text_ids.push(id.id()),
             TB::Image => image_ids.push(id.id()),
+            _ => {}
         });
 
         let outs = text_ids.iter().chain(image_ids.iter()).cloned().collect();
@@ -263,7 +264,6 @@ impl DB {
 
         relation.iter().for_each(|r| {
             item_ids.push(r.in_id());
-            println!("r.out_id(): {:?}", r.out_id());
             contain_by_item_ids.push(r.out_id());
         });
 
@@ -276,8 +276,6 @@ impl DB {
             .into_iter()
             .filter(|id| !contain_by_item_ids.contains(&id.to_string()))
             .collect();
-
-        println!("image_ids: {:?}", image_ids);
 
         let text = self.select_text(text_ids).await?;
         let image = self.select_image(image_ids).await?;
@@ -292,13 +290,16 @@ impl DB {
 
     async fn select_relation_by_out(
         &self,
-        ids: Vec<&str>,
+        ids: Vec<impl AsRef<str>>,
     ) -> anyhow::Result<Vec<ContainRelationEntity>> {
         let mut resp = self
             .client
             .query(format!(
                 "SELECT * from contains where out in [{}];",
-                ids.join(", ")
+                ids.iter()
+                    .map(|i| i.as_ref())
+                    .collect::<Vec<_>>()
+                    .join(", ")
             ))
             .await?;
         Ok(resp.take::<Vec<ContainRelationEntity>>(0)?)
