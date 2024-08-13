@@ -1,6 +1,6 @@
 use crate::model::search::ID;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct VectorSearchResult {
     pub id: ID,
     pub distance: f32,

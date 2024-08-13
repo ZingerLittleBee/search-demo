@@ -2,6 +2,7 @@ pub(crate) mod data_handler;
 
 use crate::db::DB;
 use crate::model::input::InputData;
+use crate::model::search::vector::VectorSearchResult;
 use crate::model::search::{SearchData, SearchModel};
 use crate::model::DataModel;
 use crate::rank::{Rank, RankResult};
@@ -32,7 +33,10 @@ impl AppState {
         Ok(())
     }
 
-    // 数据查询
+    /// 数据查询
+    /// 1. 文本搜索 -> 分词全文搜索和向量搜索
+    /// 2. 图片搜索 -> prompt（文本搜索流程），图片向量搜索
+    /// 3. item 搜索 -> 文本搜索和图片搜索
     pub async fn search(&self, input: SearchData) -> anyhow::Result<Vec<SelectResultVo>> {
         match self.data_handler.handle_search_data(input).await? {
             SearchModel::Text(text) => {
@@ -46,12 +50,12 @@ impl AppState {
                 let mut search_ids = vec![];
                 search_ids.extend_from_slice(
                     &Rank::full_text_rank(full_text_result)?
-                        .drain(..3)
+                        .drain(..5)
                         .collect::<Vec<RankResult>>(),
                 );
                 search_ids.extend_from_slice(
                     &Rank::vector_rank(vector_result)?
-                        .drain(..10)
+                        .drain(..5)
                         .collect::<Vec<RankResult>>(),
                 );
                 let select_result = self
@@ -63,14 +67,55 @@ impl AppState {
                     .map(|s| s.into())
                     .collect::<Vec<SelectResultVo>>())
             }
-            SearchModel::Image(_) => Ok(vec![]),
+            SearchModel::Image(image) => {
+                // prompt 全文搜索
+                let prompt_full_text_result = self
+                    .db
+                    .full_text_search(image.prompt_search_model.tokens.0)
+                    .await?;
+                // prompt 向量搜索
+                let prompt_vector_result = self
+                    .db
+                    .vector_search(image.prompt_search_model.vector, None)
+                    .await?;
+                // 图片向量搜索
+                let image_vector_result = self.db.vector_search(image.vector, None).await?;
+
+                let mut search_id = vec![];
+                search_id.extend_from_slice(
+                    &Rank::full_text_rank(prompt_full_text_result)?
+                        .drain(..5)
+                        .collect::<Vec<RankResult>>(),
+                );
+                search_id.extend_from_slice(
+                    &Rank::vector_rank(
+                        // 合并向量搜索结果
+                        image_vector_result
+                            .into_iter()
+                            .chain(prompt_vector_result.into_iter())
+                            .collect::<Vec<VectorSearchResult>>(),
+                    )?
+                    .drain(..5)
+                    .collect::<Vec<RankResult>>(),
+                );
+
+                let select_result = self
+                    .db
+                    .select_by_id(search_id.into_iter().map(|s| s.id).collect())
+                    .await?;
+
+                Ok(select_result
+                    .into_iter()
+                    .map(|s| s.into())
+                    .collect::<Vec<SelectResultVo>>())
+            }
             SearchModel::Item(_) => Ok(vec![]),
         }
     }
 }
 
 mod test {
-    use crate::model::search::SearchData;
+    use crate::model::search::{ImageSearchData, SearchData};
     use crate::state::AppState;
     use dotenvy::dotenv;
     use tracing_subscriber::EnvFilter;
@@ -89,12 +134,27 @@ mod test {
     }
 
     #[tokio::test]
-    async fn test_search() {
+    async fn test_search_text() {
         let state = setup().await;
         let res = state
             .search(SearchData::Text("hello world".to_string().into()))
             .await
             .unwrap();
-        println!("res: {:?}", serde_json::to_string(&res).unwrap());
+        println!("search text: {:?}", serde_json::to_string(&res).unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_search_image() {
+        let state = setup().await;
+        let image_data = tokio::fs::read("test/image.png").await.unwrap();
+
+        let res = state
+            .search(SearchData::Image(ImageSearchData {
+                url: "https://example.com".parse().unwrap(),
+                data: image_data,
+            }))
+            .await
+            .unwrap();
+        println!("search image: {:?}", serde_json::to_string(&res).unwrap());
     }
 }
