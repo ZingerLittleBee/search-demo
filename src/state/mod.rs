@@ -51,7 +51,7 @@ impl AppState {
                 );
                 search_ids.extend_from_slice(
                     &Rank::vector_rank(vector_result)?
-                        .drain(..3)
+                        .drain(..10)
                         .collect::<Vec<RankResult>>(),
                 );
                 let select_result = self
@@ -95,6 +95,6 @@ mod test {
             .search(SearchData::Text("hello world".to_string().into()))
             .await
             .unwrap();
-        println!("res: {:?}", res);
+        println!("res: {:?}", serde_json::to_string(&res).unwrap());
     }
 }
