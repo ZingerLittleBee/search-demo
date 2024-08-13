@@ -12,7 +12,11 @@ pub struct RankResult {
 impl Rank {
     /// 按照分数之和排序
     /// 越大越靠前
-    pub fn full_text_rank(data: Vec<FullTextSearchResult>) -> anyhow::Result<Vec<RankResult>> {
+    pub fn full_text_rank(
+        data: Vec<FullTextSearchResult>,
+        drain: Option<usize>,
+    ) -> anyhow::Result<Vec<RankResult>> {
+        let drain = std::cmp::min(drain.unwrap_or(data.len()), data.len());
         let mut res = data;
         res.sort_by(|a, b| {
             b.score
@@ -24,7 +28,7 @@ impl Rank {
                 .unwrap()
         });
         Ok(res
-            .iter()
+            .drain(..drain)
             .map(|x| RankResult { id: x.id.clone() })
             .collect())
     }
@@ -33,7 +37,11 @@ impl Rank {
 impl Rank {
     /// 按照 distance 值排序
     /// 越小越靠前
-    pub fn vector_rank(data: Vec<VectorSearchResult>) -> anyhow::Result<Vec<RankResult>> {
+    pub fn vector_rank(
+        data: Vec<VectorSearchResult>,
+        drain: Option<usize>,
+    ) -> anyhow::Result<Vec<RankResult>> {
+        let drain = std::cmp::min(drain.unwrap_or(data.len()), data.len());
         let mut res = data;
         res.sort_by(|a, b| {
             a.distance
@@ -42,7 +50,7 @@ impl Rank {
                 .unwrap()
         });
         Ok(res
-            .iter()
+            .drain(..drain)
             .map(|x| RankResult { id: x.id.clone() })
             .collect())
     }
@@ -71,7 +79,7 @@ mod test {
                 distance: 0.3,
             },
         ];
-        let res = Rank::vector_rank(data).unwrap();
+        let res = Rank::vector_rank(data, None).unwrap();
         assert_eq!(res.len(), 3);
         assert_eq!(res[0].id.id(), "1");
         assert_eq!(res[1].id.id(), "2");
@@ -94,12 +102,12 @@ mod test {
                 score: vec![("e".to_string(), 0.3), ("f".to_string(), 0.4)],
             },
         ];
-        let res = Rank::full_text_rank(data);
+        let res = Rank::full_text_rank(data, None);
         assert_eq!(res.is_ok(), true);
         let res = res.unwrap();
         assert_eq!(res.len(), 3);
-        assert_eq!(res[0].id.id(), "3");
-        assert_eq!(res[1].id.id(), "2");
-        assert_eq!(res[2].id.id(), "1");
+        assert_eq!(res[0].id.id(), "text:3");
+        assert_eq!(res[1].id.id(), "text:2");
+        assert_eq!(res[2].id.id(), "text:1");
     }
 }

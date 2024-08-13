@@ -1,6 +1,7 @@
 use crate::ai::clip::model::CLIPModel;
 use crate::ai::clip::CLIP;
 use crate::ai::image_to_prompt::image_to_prompt;
+use crate::constant::STOP_WORDS;
 use crate::model::input::{ImageInputData, InputData, ItemInputData, TextInputData};
 use crate::model::search::{
     ImageSearchData, ImageSearchModel, ItemSearchData, ItemSearchModel, SearchData, SearchModel,
@@ -9,6 +10,7 @@ use crate::model::search::{
 use crate::model::{DataModel, ImageModel, ItemModel, TextModel};
 use anyhow::Ok;
 use futures::future::join_all;
+use regex::Regex;
 use std::env;
 use std::path::PathBuf;
 
@@ -46,10 +48,27 @@ impl DataHandler {
         .expect("Failed to load CLIP")
     }
 
-    /// TODO
-    /// 暂时只针对英文简单以空格分隔
     pub async fn tokenizer(&self, data: &str) -> anyhow::Result<Vec<String>> {
-        Ok(data.split(" ").map(|s| s.to_string()).collect())
+        let data = data.to_lowercase();
+        // 匹配 STOP_WORDS 中的所有单词
+        let pattern = format!(r"\b(?:{})\b", STOP_WORDS.join("|"));
+        let re_stop_words = Regex::new(&pattern)?;
+
+        // 匹配所有标点符号
+        let punctuation_pattern = Regex::new(r"[^\w\s]|[！-～]")?;
+
+        // 移除匹配的停用词
+        let cleaned_data = re_stop_words.replace_all(data.as_str(), "");
+
+        // 移除所有标点符号
+        let final_result = punctuation_pattern.replace_all(&cleaned_data, "");
+
+        let tokens: Vec<String> = final_result
+            .split_whitespace()
+            .map(|s| s.to_string())
+            .collect();
+
+        Ok(tokens)
     }
 
     pub async fn get_text_embedding(&self, data: &str) -> anyhow::Result<Vec<f32>> {
@@ -208,5 +227,19 @@ impl DataHandler {
                 self.item_search_data_to_model(&item).await?,
             )),
         }
+    }
+}
+
+mod test {
+    #[tokio::test]
+    async fn test_tokenizer() {
+        let data_handler = super::DataHandler::new().await;
+        let tokens = data_handler.tokenizer("hello world!").await.unwrap();
+        let tokens2 = data_handler.tokenizer("There are many people stopping and looking at the seaside. Children are playing on the beach").await.unwrap();
+        let tokens3 = data_handler.tokenizer("I'm a teacher").await.unwrap();
+        println!("tokens: {:?}", tokens);
+        println!("tokens2: {:?}", tokens2);
+        println!("tokens3: {:?}", tokens3);
+        assert_eq!(tokens, vec!["hello", "world"]);
     }
 }
