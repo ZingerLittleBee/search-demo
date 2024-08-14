@@ -64,7 +64,6 @@ impl From<TextEntity> for TextVo {
         TextVo {
             id: value.id.id.to_raw(),
             data: value.data,
-            vector: value.vector,
         }
     }
 }
@@ -75,8 +74,6 @@ impl From<ImageEntity> for ImageVo {
             id: value.id.id.to_raw(),
             url: value.url,
             prompt: value.prompt,
-            prompt_vector: value.prompt_vector,
-            vector: value.vector,
         }
     }
 }
@@ -91,12 +88,18 @@ impl From<ItemEntity> for ItemVo {
     }
 }
 
-impl From<SelectResultEntity> for SelectResultVo {
-    fn from(value: SelectResultEntity) -> Self {
-        match value {
-            SelectResultEntity::Text(text) => SelectResultVo::Text(TextVo::from(text)),
-            SelectResultEntity::Image(image) => SelectResultVo::Image(ImageVo::from(image)),
-            SelectResultEntity::Item(item) => SelectResultVo::Item(ItemVo::from(item)),
+impl From<Vec<SelectResultEntity>> for SelectResultVo {
+    fn from(value: Vec<SelectResultEntity>) -> Self {
+        let mut text = vec![];
+        let mut image = vec![];
+        let mut item = vec![];
+        for entity in value {
+            match entity {
+                SelectResultEntity::Text(text_entity) => text.push(text_entity.into()),
+                SelectResultEntity::Image(image_entity) => image.push(image_entity.into()),
+                SelectResultEntity::Item(item_entity) => item.push(item_entity.into()),
+            }
         }
+        SelectResultVo { text, image, item }
     }
 }

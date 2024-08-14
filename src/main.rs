@@ -1,30 +1,22 @@
 mod ai;
-mod db;
 mod constant;
+mod db;
+mod handler;
 pub mod model;
-mod state;
 mod rank;
+mod state;
 mod vo;
 
-use axum::response::Html;
-use axum::routing::get;
+mod utils;
+
+use crate::handler::health_handler;
+use crate::handler::search::{search_with_image, search_with_item, search_with_text};
+use crate::state::AppState;
+use axum::routing::{get, post};
 use axum::Router;
 use dotenvy::dotenv;
-use serde::Deserialize;
 use std::sync::Arc;
-use surrealdb::sql::Thing;
 use tracing::info;
-use crate::state::AppState;
-
-#[derive(Debug, Deserialize)]
-struct Record {
-    #[allow(dead_code)]
-    id: Thing,
-}
-
-async fn handler() -> Html<&'static str> {
-    Html("<h1>Hello, World!</h1>")
-}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -38,7 +30,10 @@ async fn main() -> anyhow::Result<()> {
     let shared_state = Arc::new(AppState::new().await);
 
     let app = Router::new()
-        .route("/", get(handler))
+        .route("/health", get(health_handler))
+        .route("/search/text", post(search_with_text))
+        .route("/search/image", post(search_with_image))
+        .route("/search/item", post(search_with_item))
         .with_state(shared_state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;

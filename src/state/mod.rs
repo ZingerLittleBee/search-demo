@@ -40,7 +40,7 @@ impl AppState {
     /// 1. 文本搜索 -> 分词全文搜索和向量搜索
     /// 2. 图片搜索 -> prompt（文本搜索流程），图片向量搜索
     /// 3. item 搜索 -> 文本搜索和图片搜索
-    pub async fn search(&self, input: SearchData) -> anyhow::Result<Vec<SelectResultVo>> {
+    pub async fn search(&self, input: SearchData) -> anyhow::Result<SelectResultVo> {
         match self.data_handler.handle_search_data(input).await? {
             SearchModel::Text(text) => {
                 let vector = self
@@ -57,10 +57,7 @@ impl AppState {
                     .db
                     .select_by_id(search_ids.into_iter().map(|s| s.id).collect())
                     .await?;
-                Ok(select_result
-                    .into_iter()
-                    .map(|s| s.into())
-                    .collect::<Vec<SelectResultVo>>())
+                Ok(select_result.into())
             }
             SearchModel::Image(image) => {
                 // prompt 全文搜索
@@ -93,10 +90,7 @@ impl AppState {
                     .select_by_id(search_ids.into_iter().map(|s| s.id).collect())
                     .await?;
 
-                Ok(select_result
-                    .into_iter()
-                    .map(|s| s.into())
-                    .collect::<Vec<SelectResultVo>>())
+                Ok(select_result.into())
             }
             SearchModel::Item(item) => {
                 let mut full_text_result = vec![];
@@ -160,10 +154,7 @@ impl AppState {
                     .select_by_id(search_ids.into_iter().map(|s| s.id).collect())
                     .await?;
 
-                Ok(select_result
-                    .into_iter()
-                    .map(|s| s.into())
-                    .collect::<Vec<SelectResultVo>>())
+                Ok(select_result.into())
             }
         }
     }
@@ -172,6 +163,7 @@ impl AppState {
 mod test {
     use crate::model::search::{ImageSearchData, ItemSearchData, SearchData};
     use crate::state::AppState;
+    use crate::utils::image::load_image_from_url;
     use dotenvy::dotenv;
     use tracing_subscriber::EnvFilter;
 
@@ -216,7 +208,9 @@ mod test {
     #[tokio::test]
     async fn test_search_item() {
         let state = setup().await;
-        let image_data = tokio::fs::read("test/image.png").await.unwrap();
+        // let image_data = tokio::fs::read("test/image.png").await.unwrap();
+
+        let image_data = load_image_from_url("https://musedam-assets.oss-cn-beijing.aliyuncs.com/public/0f4f8de9d1c001537d04463daae5f383758c738d39756c1f6ef2e2c38e046f14.jpeg".parse().unwrap()).await.unwrap();
 
         let item = SearchData::Item(ItemSearchData {
             text: vec!["hello world".to_string().into()],
