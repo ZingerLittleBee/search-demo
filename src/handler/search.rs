@@ -1,16 +1,13 @@
 use crate::model;
 use crate::model::search::{ImageSearchData, ItemSearchData};
 use crate::state::AppState;
-use crate::utils::image::load_image_from_url;
 use crate::vo::result::HTTPResult;
 use crate::vo::SelectResultVo;
-use anyhow::anyhow;
 use axum::extract::State;
 use axum::Json;
 use futures_util::{stream, StreamExt};
 use std::sync::Arc;
 use tracing::error;
-use url::Url;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct SearchWithTextParam {
@@ -55,34 +52,19 @@ pub async fn search_with_image(
     State(state): State<Arc<AppState>>,
     Json(input): Json<SearchWithImageParam>,
 ) -> HTTPResult<SelectResultVo> {
-    let url = match input.url.clone().parse::<Url>() {
-        Ok(url) => url,
-        Err(_) => {
-            error!("invalid url: {:?}", input.url);
+    let image_search_data = match ImageSearchData::from_url(&input.url).await {
+        Ok(data) => data,
+        Err(e) => {
+            error!("invalid image from url: {} with error: {e}", &input.url);
             return HTTPResult {
                 status: 400,
-                message: Some("invalid url".to_string()),
+                message: Some("parse image error".to_string()),
                 data: None,
             };
         }
     };
 
-    let image_data = match load_image_from_url(url.clone()).await {
-        Ok(image_data) => image_data,
-        Err(_) => {
-            error!("invalid image from url: {url}",);
-            return HTTPResult {
-                status: 400,
-                message: Some("invalid image".to_string()),
-                data: None,
-            };
-        }
-    };
-
-    let search_data = model::search::SearchData::Image(ImageSearchData {
-        url,
-        data: image_data,
-    });
+    let search_data = model::search::SearchData::Image(image_search_data);
 
     match state.search(search_data).await {
         Ok(result) => HTTPResult {
@@ -113,21 +95,7 @@ pub async fn search_with_item(
     let mut search_image_vec = vec![];
 
     stream::iter(input.url)
-        .then(|url_str| async move {
-            match url_str.parse::<Url>() {
-                Ok(url) => {
-                    if let Ok(image_data) = load_image_from_url(url.clone()).await {
-                        Ok(ImageSearchData {
-                            url,
-                            data: image_data,
-                        })
-                    } else {
-                        Err(anyhow!("invalid image from url: {url_str}",))
-                    }
-                }
-                Err(_) => Err(anyhow!("invalid url: {url_str}")),
-            }
-        })
+        .then(|url_str| async move { ImageSearchData::from_url(&url_str).await })
         .collect::<Vec<_>>()
         .await
         .into_iter()

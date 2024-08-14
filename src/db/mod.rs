@@ -14,6 +14,7 @@ use crate::model::search::full_text::{FullTextSearchResult, FULL_TEXT_SEARCH_TAB
 use crate::model::search::vector::{VectorSearchResult, VECTOR_SEARCH_TABLE};
 use crate::model::search::{ID, TB};
 use crate::model::{ImageModel, ItemModel, TextModel};
+use crate::utils::replace_single_quotes;
 use futures::future::join_all;
 use std::env;
 use surrealdb::{
@@ -63,6 +64,8 @@ impl DB {
 // 📖 入库实现
 impl DB {
     pub async fn insert_text(&self, input: TextModel) -> anyhow::Result<()> {
+        let mut format_input = input;
+        format_input.data = replace_single_quotes(format_input.data.as_str());
         self.client
             .query(
                 "
@@ -71,12 +74,14 @@ impl DB {
 	        vector: $vector
         }",
             )
-            .bind(input)
+            .bind(format_input)
             .await?;
         Ok(())
     }
 
     pub async fn insert_image(&self, input: ImageModel) -> anyhow::Result<()> {
+        let mut format_input = input;
+        format_input.prompt = replace_single_quotes(format_input.prompt.as_str());
         self.client
             .query(
                 "
@@ -87,7 +92,7 @@ impl DB {
             prompt_vector: $prompt_vector
         }",
             )
-            .bind(input)
+            .bind(format_input)
             .await?;
         Ok(())
     }
@@ -102,7 +107,7 @@ impl DB {
             create_text_sql_vec.push(format!(
                 "LET $text_{} = (CREATE ONLY text CONTENT {{data: '{}', vector: [{}]}}).id;",
                 i,
-                text.data,
+                replace_single_quotes(text.data.as_str()),
                 text.vector
                     .iter()
                     .map(|v| v.to_string())
@@ -116,7 +121,7 @@ impl DB {
                 "LET $image_{} = (CREATE ONLY image CONTENT {{url: '{}', prompt: '{}', vector: [{}], prompt_vector: [{}]}}).id;",
                 i,
                 image.url,
-                image.prompt,
+                replace_single_quotes(image.prompt.as_str()),
                 image
                     .vector
                     .iter()

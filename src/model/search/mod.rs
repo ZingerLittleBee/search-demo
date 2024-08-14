@@ -4,6 +4,7 @@ pub mod vector;
 use crate::model::search::full_text::FullTextSearchResult;
 use crate::model::search::vector::VectorSearchResult;
 use url::Url;
+use crate::utils::image::load_image_from_url;
 
 pub struct TextSearchData(pub String);
 
@@ -16,6 +17,14 @@ impl From<String> for TextSearchData {
 pub struct ImageSearchData {
     pub url: Url,
     pub data: Vec<u8>,
+}
+
+impl ImageSearchData {
+    pub async fn from_url(url_str: &str) -> anyhow::Result<Self> {
+        let url = url_str.parse::<Url>()?;
+        let data = load_image_from_url(url.clone()).await?;
+        Ok(Self { url, data })
+    }
 }
 
 pub struct ItemSearchData {

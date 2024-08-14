@@ -10,6 +10,7 @@ mod vo;
 mod utils;
 
 use crate::handler::health_handler;
+use crate::handler::inbound::{inbound_image, inbound_item, inbound_text};
 use crate::handler::search::{search_with_image, search_with_item, search_with_text};
 use crate::state::AppState;
 use axum::routing::{get, post};
@@ -34,6 +35,9 @@ async fn main() -> anyhow::Result<()> {
         .route("/search/text", post(search_with_text))
         .route("/search/image", post(search_with_image))
         .route("/search/item", post(search_with_item))
+        .route("/inbound/text", post(inbound_text))
+        .route("/inbound/image", post(inbound_image))
+        .route("/inbound/item", post(inbound_item))
         .with_state(shared_state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;

@@ -6,7 +6,7 @@ pub const DATABASE_PASSWORD: &str = "DATABASE_PASSWORD";
 pub const DATABASE_NS: &str = "DATABASE_NS";
 pub const DATABASE_NAME: &str = "DATABASE_NAME";
 
-pub const STOP_WORDS: [&str; 179] = [
+pub const STOP_WORDS: [&str; 182] = [
     "i",
     "me",
     "my",
@@ -186,4 +186,7 @@ pub const STOP_WORDS: [&str; 179] = [
     "won't",
     "wouldn",
     "wouldn't",
+    "there's",
+    "it's",
+    "here's"
 ];
