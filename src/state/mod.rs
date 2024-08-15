@@ -51,9 +51,11 @@ impl AppState {
                 let tokens = self.data_handler.tokenizer(text.data.as_str()).await?;
                 let full_text_result = self.db.full_text_search(tokens).await?;
                 let vector_result = self.db.vector_search(vector, None).await?;
-                let mut search_ids = vec![];
-                search_ids.extend_from_slice(&Rank::vector_rank(vector_result, Some(5))?);
-                search_ids.extend_from_slice(&Rank::full_text_rank(full_text_result, Some(5))?);
+
+                let search_ids = Rank::rank((full_text_result, vector_result), Some(10))?
+                    .into_iter()
+                    .map(|res| res);
+
                 let select_result = self
                     .db
                     .select_by_id(search_ids.into_iter().unique().map(|s| s.id).collect())
@@ -74,17 +76,18 @@ impl AppState {
                 // 图片向量搜索
                 let image_vector_result = self.db.vector_search(image.vector, None).await?;
 
-                let mut search_ids = vec![];
-                search_ids.extend_from_slice(&Rank::vector_rank(
-                    // 合并向量搜索结果
-                    image_vector_result
-                        .into_iter()
-                        .chain(prompt_vector_result.into_iter())
-                        .collect::<Vec<VectorSearchResult>>(),
-                    Some(5),
-                )?);
-                search_ids
-                    .extend_from_slice(&Rank::full_text_rank(prompt_full_text_result, Some(5))?);
+                let search_ids = Rank::rank(
+                    (
+                        prompt_full_text_result,
+                        image_vector_result
+                            .into_iter()
+                            .chain(prompt_vector_result.into_iter())
+                            .collect::<Vec<VectorSearchResult>>(),
+                    ),
+                    Some(10),
+                )?
+                .into_iter()
+                .map(|res| res);
 
                 let select_result = self
                     .db
@@ -96,7 +99,6 @@ impl AppState {
             SearchModel::Item(item) => {
                 let mut full_text_result = vec![];
                 let mut vector_result = vec![];
-                let mut search_ids = vec![];
 
                 stream::iter(item.text)
                     .then(|text| async move {
@@ -147,8 +149,9 @@ impl AppState {
                         }
                     });
 
-                search_ids.extend_from_slice(&Rank::vector_rank(vector_result, Some(5))?);
-                search_ids.extend_from_slice(&Rank::full_text_rank(full_text_result, Some(5))?);
+                let search_ids = Rank::rank((full_text_result, vector_result), Some(10))?
+                    .into_iter()
+                    .map(|res| res);
 
                 let select_result = self
                     .db

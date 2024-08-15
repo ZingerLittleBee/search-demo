@@ -65,12 +65,10 @@ pub async fn read_image_from_path(
 }
 
 mod test {
-    use crate::ai::image_to_prompt::read_image_from_path;
-
     #[tokio::test]
     async fn test_image_to_prompt() {
-        let image1 = read_image_from_path("test/image.png").await.unwrap();
-        let image2 = read_image_from_path("test/img2.jpeg").await.unwrap();
+        let image1 = crate::ai::image_to_prompt::read_image_from_path("test/image.png").await.unwrap();
+        let image2 = crate::ai::image_to_prompt::read_image_from_path("test/img2.jpeg").await.unwrap();
 
         println!(
             "image1 to prompt: {}",
