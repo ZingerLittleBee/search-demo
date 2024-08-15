@@ -3,8 +3,8 @@ pub mod vector;
 
 use crate::model::search::full_text::FullTextSearchResult;
 use crate::model::search::vector::VectorSearchResult;
-use url::Url;
 use crate::utils::image::load_image_from_url;
+use url::Url;
 
 pub struct TextSearchData(pub String);
 
@@ -72,7 +72,7 @@ pub enum SearchResult {
 }
 
 // table
-#[derive(Debug, Clone, Eq, PartialEq, Copy)]
+#[derive(Debug, Clone, Eq, PartialEq, Copy, Hash)]
 pub enum TB {
     Text,
     Image,
@@ -94,10 +94,22 @@ impl From<&str> for TB {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ID {
     id: String,
     tb: TB,
+}
+
+impl From<&str> for ID {
+    fn from(value: &str) -> Self {
+        let mut iter = value.split(':');
+        let tb = iter.next().unwrap();
+        let id = iter.next().unwrap();
+        Self {
+            id: id.into(),
+            tb: tb.into(),
+        }
+    }
 }
 
 impl ID {

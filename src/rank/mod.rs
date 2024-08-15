@@ -1,10 +1,11 @@
 use crate::model::search::full_text::FullTextSearchResult;
 use crate::model::search::vector::VectorSearchResult;
 use crate::model::search::ID;
+use std::collections::HashMap;
 
 pub struct Rank;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct RankResult {
     pub id: ID,
 }
@@ -32,9 +33,7 @@ impl Rank {
             .map(|x| RankResult { id: x.id.clone() })
             .collect())
     }
-}
 
-impl Rank {
     /// 按照 distance 值排序
     /// 越小越靠前
     pub fn vector_rank(
@@ -54,6 +53,60 @@ impl Rank {
             .map(|x| RankResult { id: x.id.clone() })
             .collect())
     }
+
+    pub fn rank(
+        (full_text_data, vector_data): (Vec<FullTextSearchResult>, Vec<VectorSearchResult>),
+        drain: Option<usize>,
+    ) -> anyhow::Result<Vec<RankResult>> {
+        let drain = drain.unwrap_or(10);
+        let full_text_rank = Rank::full_text_rank(full_text_data, None)?;
+        let vector_rank = Rank::vector_rank(vector_data, None)?;
+        Ok(Rank::rrf(vec![full_text_rank, vector_rank], None)
+            .drain(..drain)
+            .collect())
+    }
+}
+
+trait Rankable {
+    fn id(&self) -> String;
+    fn from_str(s: &str) -> Self;
+}
+
+impl Rankable for RankResult {
+    fn id(&self) -> String {
+        self.id.id()
+    }
+
+    fn from_str(s: &str) -> Self {
+        RankResult { id: s.into() }
+    }
+}
+
+impl Rank {
+    fn rrf<T: Rankable>(rankings: Vec<Vec<T>>, k: Option<usize>) -> Vec<T> {
+        let mut rrf_scores: HashMap<String, f64> = HashMap::new();
+        let k = k.unwrap_or(60);
+
+        for ranking in rankings {
+            for (rank, item) in ranking.into_iter().enumerate() {
+                let doc_id = item.id();
+                let score = rrf_scores.entry(doc_id).or_insert(0.0);
+                *score += 1.0 / (k as f64 + rank as f64 + 1.0);
+            }
+        }
+
+        let mut fused_ranking: Vec<String> = rrf_scores.keys().cloned().collect();
+        fused_ranking.sort_by(|a, b| {
+            rrf_scores[b]
+                .partial_cmp(&rrf_scores[a])
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
+
+        fused_ranking
+            .into_iter()
+            .map(|f| T::from_str(f.as_str()))
+            .collect()
+    }
 }
 
 #[cfg(test)]
@@ -61,7 +114,7 @@ mod test {
     use crate::model::search::full_text::FullTextSearchResult;
     use crate::model::search::vector::VectorSearchResult;
     use crate::model::search::ID;
-    use crate::rank::Rank;
+    use crate::rank::{Rank, Rankable};
 
     #[test]
     fn test_vector_rank() {
@@ -109,5 +162,35 @@ mod test {
         assert_eq!(res[0].id.id(), "text:3");
         assert_eq!(res[1].id.id(), "text:2");
         assert_eq!(res[2].id.id(), "text:1");
+    }
+
+    impl Rankable for String {
+        fn id(&self) -> String {
+            self.to_string()
+        }
+
+        fn from_str(s: &str) -> Self {
+            s.to_string()
+        }
+    }
+
+    #[test]
+    fn test_rrt() {
+        let ranking1 = vec!["doc1", "doc2", "doc3", "doc4"]
+            .iter()
+            .map(|x| x.to_string())
+            .collect();
+        let ranking2 = vec!["doc3", "doc2", "doc1", "doc5"]
+            .iter()
+            .map(|x| x.to_string())
+            .collect();
+        let ranking3 = vec!["doc2", "doc3", "doc5", "doc1"]
+            .iter()
+            .map(|x| x.to_string())
+            .collect();
+        let rankings = vec![ranking1, ranking2, ranking3];
+
+        let fused_ranking = Rank::rrf(rankings, None);
+        assert_eq!(vec!["doc2", "doc3", "doc1", "doc5", "doc4"], fused_ranking);
     }
 }

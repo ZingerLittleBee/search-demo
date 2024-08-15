@@ -9,6 +9,7 @@ use crate::model::DataModel;
 use crate::rank::Rank;
 use crate::vo::SelectResultVo;
 use futures_util::{stream, StreamExt};
+use itertools::Itertools;
 use tracing::error;
 
 pub struct AppState {
@@ -51,11 +52,11 @@ impl AppState {
                 let full_text_result = self.db.full_text_search(tokens).await?;
                 let vector_result = self.db.vector_search(vector, None).await?;
                 let mut search_ids = vec![];
-                search_ids.extend_from_slice(&Rank::full_text_rank(full_text_result, Some(5))?);
                 search_ids.extend_from_slice(&Rank::vector_rank(vector_result, Some(5))?);
+                search_ids.extend_from_slice(&Rank::full_text_rank(full_text_result, Some(5))?);
                 let select_result = self
                     .db
-                    .select_by_id(search_ids.into_iter().map(|s| s.id).collect())
+                    .select_by_id(search_ids.into_iter().unique().map(|s| s.id).collect())
                     .await?;
                 Ok(select_result.into())
             }
@@ -74,8 +75,6 @@ impl AppState {
                 let image_vector_result = self.db.vector_search(image.vector, None).await?;
 
                 let mut search_ids = vec![];
-                search_ids
-                    .extend_from_slice(&Rank::full_text_rank(prompt_full_text_result, Some(5))?);
                 search_ids.extend_from_slice(&Rank::vector_rank(
                     // 合并向量搜索结果
                     image_vector_result
@@ -84,10 +83,12 @@ impl AppState {
                         .collect::<Vec<VectorSearchResult>>(),
                     Some(5),
                 )?);
+                search_ids
+                    .extend_from_slice(&Rank::full_text_rank(prompt_full_text_result, Some(5))?);
 
                 let select_result = self
                     .db
-                    .select_by_id(search_ids.into_iter().map(|s| s.id).collect())
+                    .select_by_id(search_ids.into_iter().unique().map(|s| s.id).collect())
                     .await?;
 
                 Ok(select_result.into())
@@ -146,12 +147,12 @@ impl AppState {
                         }
                     });
 
-                search_ids.extend_from_slice(&Rank::full_text_rank(full_text_result, Some(5))?);
                 search_ids.extend_from_slice(&Rank::vector_rank(vector_result, Some(5))?);
+                search_ids.extend_from_slice(&Rank::full_text_rank(full_text_result, Some(5))?);
 
                 let select_result = self
                     .db
-                    .select_by_id(search_ids.into_iter().map(|s| s.id).collect())
+                    .select_by_id(search_ids.into_iter().unique().map(|s| s.id).collect())
                     .await?;
 
                 Ok(select_result.into())

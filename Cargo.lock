@@ -3723,6 +3723,7 @@ dependencies = [
  "futures",
  "futures-util",
  "image",
+ "itertools 0.13.0",
  "ndarray",
  "ort",
  "rand",
