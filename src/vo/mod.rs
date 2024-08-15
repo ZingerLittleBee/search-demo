@@ -12,7 +12,6 @@ pub struct TextVo {
 pub struct ImageVo {
     pub id: String,
     pub url: String,
-    pub prompt: String,
 }
 
 #[derive(Debug, Serialize)]

@@ -73,7 +73,6 @@ impl From<ImageEntity> for ImageVo {
         ImageVo {
             id: value.id.id.to_raw(),
             url: value.url,
-            prompt: value.prompt,
         }
     }
 }
