@@ -1,6 +1,7 @@
 pub mod full_text;
 pub mod vector;
 
+use surrealdb::sql::Thing;
 use crate::model::search::full_text::FullTextSearchResult;
 use crate::model::search::vector::VectorSearchResult;
 use crate::utils::image::load_image_from_url;
@@ -98,6 +99,12 @@ impl From<&str> for TB {
 pub struct ID {
     id: String,
     tb: TB,
+}
+
+impl From<&Thing> for ID {
+    fn from(value: &Thing) -> Self {
+        ID::new(value.id.to_raw(), value.tb.as_str().into())
+    }
 }
 
 impl From<&str> for ID {

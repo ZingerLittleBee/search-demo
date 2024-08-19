@@ -20,11 +20,10 @@ impl Rank {
         let drain = std::cmp::min(drain.unwrap_or(data.len()), data.len());
         let mut res = data;
         res.sort_by(|a, b| {
-            b.score
-                .iter()
-                .map(|x| x.1)
-                .sum::<f32>()
-                .partial_cmp(&a.score.iter().map(|x| x.1).sum::<f32>())
+            let a_avg_score = a.score.iter().map(|x| x.1).sum::<f32>() / a.score.len() as f32;
+            let b_avg_score = b.score.iter().map(|x| x.1).sum::<f32>() / b.score.len() as f32;
+            b_avg_score
+                .partial_cmp(&a_avg_score)
                 .ok_or(std::cmp::Ordering::Equal)
                 .unwrap()
         });
@@ -61,7 +60,15 @@ impl Rank {
         let drain = drain.unwrap_or(10);
         let full_text_rank = Rank::full_text_rank(full_text_data, None)?;
         let vector_rank = Rank::vector_rank(vector_data, None)?;
-        Ok(Rank::rrf(vec![full_text_rank, vector_rank], None)
+        
+        println!("full_text_rank {:?}", full_text_rank);
+        println!("vector_rank {:?}", vector_rank);
+        
+        let mut rank_result = Rank::rrf(vec![full_text_rank, vector_rank], None);
+        
+        println!("rank_result {:?}", rank_result);
+        
+        Ok(rank_result
             .drain(..drain)
             .collect())
     }
@@ -144,7 +151,7 @@ mod test {
         let data = vec![
             FullTextSearchResult {
                 id: ID::new("1".to_string(), "text"),
-                score: vec![("a".to_string(), 0.1), ("b".to_string(), 0.2)],
+                score: vec![("a".to_string(), 0.1), ("b".to_string(), 0.2), ("bb".to_string(), 0.2), ("bbb".to_string(), 0.2)],
             },
             FullTextSearchResult {
                 id: ID::new("2".to_string(), "text"),

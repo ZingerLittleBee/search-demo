@@ -59,6 +59,16 @@ pub enum SelectResultEntity {
     Item(ItemEntity),
 }
 
+impl SelectResultEntity {
+    pub fn id(&self) -> ID {
+        match self {
+            SelectResultEntity::Text(text) => ID::from(&text.id),
+            SelectResultEntity::Image(image) => ID::from(&image.id),
+            SelectResultEntity::Item(item) => ID::from(&item.id),
+        }
+    }
+}
+
 impl From<TextEntity> for TextVo {
     fn from(value: TextEntity) -> Self {
         TextVo {

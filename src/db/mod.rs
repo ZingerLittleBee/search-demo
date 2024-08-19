@@ -17,6 +17,7 @@ use crate::model::{ImageModel, ItemModel, TextModel};
 use crate::utils::escape_single_quotes;
 use futures::future::join_all;
 use std::env;
+use futures_util::{stream, StreamExt};
 use surrealdb::{
     engine::remote::ws::{Client, Ws},
     opt::auth::Root,
@@ -297,17 +298,24 @@ impl DB {
         &self,
         ids: Vec<impl AsRef<str>>,
     ) -> anyhow::Result<Vec<ContainRelationEntity>> {
-        let mut resp = self
-            .client
-            .query(format!(
-                "SELECT * from contains where out in [{}];",
-                ids.iter()
-                    .map(|i| i.as_ref())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ))
-            .await?;
-        Ok(resp.take::<Vec<ContainRelationEntity>>(0)?)
+        let mut result: Vec<Vec<ContainRelationEntity>> = vec![];
+        stream::iter(ids).then(|id| async move {
+            let mut resp = self
+                .client
+                .query(format!(
+                    "SELECT * from contains where out = {};",
+                    id.as_ref()
+                ))
+                .await?;
+            let result = resp.take::<Vec<ContainRelationEntity>>(0)?;
+            Ok::<_, anyhow::Error>(result)
+        }).collect::<Vec<_>>().await.into_iter().for_each(|res| match res { 
+            Ok(relations) => {
+                result.push(relations);
+            }
+            _ => {}
+        });
+        Ok(result.into_iter().flatten().collect())
     }
 
     async fn select_text(&self, ids: Vec<impl AsRef<str>>) -> anyhow::Result<Vec<TextEntity>> {
@@ -325,31 +333,48 @@ impl DB {
     }
 
     async fn select_image(&self, ids: Vec<impl AsRef<str>>) -> anyhow::Result<Vec<ImageEntity>> {
-        let mut resp = self
-            .client
-            .query(format!(
-                "SELECT * FROM image WHERE id in [{}];",
-                ids.iter()
-                    .map(|i| i.as_ref())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ))
-            .await?;
-        Ok(resp.take::<Vec<ImageEntity>>(0)?)
+        let mut result = vec![];
+        
+        stream::iter(ids).then(|id| async move {
+            let mut resp = self
+                .client
+                .query(format!(
+                    "SELECT * FROM {};",
+                    id.as_ref()
+                ))
+                .await?;
+            let result = resp.take::<Vec<ImageEntity>>(0)?;
+            Ok::<_, anyhow::Error>(result)
+        }).collect::<Vec<_>>().await.into_iter().for_each(|res| match res { 
+            Ok(image) => {
+                result.push(image);
+            }
+            _ => {}
+        });
+        Ok(result.into_iter().flatten().collect())
     }
 
     async fn select_item(&self, ids: Vec<impl AsRef<str>>) -> anyhow::Result<Vec<ItemEntity>> {
-        let mut resp = self
-            .client
-            .query(format!(
-                "SELECT * FROM item WHERE id in [{}] FETCH text, image;",
-                ids.iter()
-                    .map(|i| i.as_ref())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ))
-            .await?;
-        Ok(resp.take::<Vec<ItemEntity>>(0)?)
+        let mut result = vec![];
+        
+        stream::iter(ids).then(|id| async move {
+            let mut resp = self
+                .client
+                .query(format!(
+                    "SELECT * FROM {} FETCH text, image;",
+                    id.as_ref()
+                ))
+                .await?;
+            let result = resp.take::<Vec<ItemEntity>>(0)?;
+            Ok::<_, anyhow::Error>(result)
+        }).collect::<Vec<_>>().await.into_iter().for_each(|res| match res { 
+            Ok(item) => {
+                result.push(item);
+            }
+            _ => {}
+        });
+        
+        Ok(result.into_iter().flatten().collect())
     }
 }
 
@@ -549,13 +574,13 @@ mod test {
     async fn test_select_by_id() {
         let db = setup().await;
         let ids = vec![
-            crate::model::search::ID::new("text:kobjmx4b0csfcdr2b2yp".to_string(), "text"),
-            crate::model::search::ID::new("image:vsiffo113141wrewrwer".to_string(), "image"),
-            crate::model::search::ID::new("image:7nlycejva0pbyv9kcgyw".to_string(), "image"),
-            crate::model::search::ID::new("image:7juby5xev13458xmwaf4".to_string(), "image"),
+            crate::model::search::ID::new("tkvfpq8o3b0ddkpibo02".to_string(), "text"),
+            crate::model::search::ID::new("4wdx1ueb45gjv9ywzxnx".to_string(), "image"),
+            // crate::model::search::ID::new("7nlycejva0pbyv9kcgyw".to_string(), "image"),
+            // crate::model::search::ID::new("7juby5xev13458xmwaf4".to_string(), "image"),
         ];
         let res = db.select_by_id(ids).await.unwrap();
-        println!("res: {:?}", res);
+        println!("res: {:?}", res.iter().map(|r| r.id()).collect::<Vec<_>>());
         println!("res len: {}", res.len())
     }
 }

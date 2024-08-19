@@ -51,10 +51,15 @@ impl AppState {
                 let tokens = self.data_handler.tokenizer(text.data.as_str()).await?;
                 let full_text_result = self.db.full_text_search(tokens).await?;
                 let vector_result = self.db.vector_search(vector, None).await?;
+                
+                println!("full_text_result: {:?}", full_text_result);
+                println!("vector_result: {:?}", vector_result);
 
                 let search_ids = Rank::rank((full_text_result, vector_result), Some(10))?
                     .into_iter()
                     .map(|res| res);
+                
+                println!("search_ids: {:?}", search_ids);
 
                 let select_result = self
                     .db
