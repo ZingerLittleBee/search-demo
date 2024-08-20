@@ -14,10 +14,10 @@ use crate::model::search::full_text::{FullTextSearchResult, FULL_TEXT_SEARCH_TAB
 use crate::model::search::vector::{VectorSearchResult, VECTOR_SEARCH_TABLE};
 use crate::model::search::{ID, TB};
 use crate::model::{ImageModel, ItemModel, TextModel};
-use crate::utils::escape_single_quotes;
+use crate::utils::{deduplicate, escape_single_quotes};
 use futures::future::join_all;
-use std::env;
 use futures_util::{stream, StreamExt};
+use std::env;
 use surrealdb::{
     engine::remote::ws::{Client, Ws},
     opt::auth::Root,
@@ -264,6 +264,8 @@ impl DB {
         });
 
         let outs = text_ids.iter().chain(image_ids.iter()).cloned().collect();
+
+        // 查询被 contain 的 text、image
         let relation = self.select_relation_by_out(outs).await?;
 
         let mut contain_by_item_ids = vec![];
@@ -283,9 +285,9 @@ impl DB {
             .filter(|id| !contain_by_item_ids.contains(&id.to_string()))
             .collect();
 
-        let text = self.select_text(text_ids).await?;
-        let image = self.select_image(image_ids).await?;
-        let item = self.select_item(item_ids).await?;
+        let text = self.select_text(deduplicate(text_ids)).await?;
+        let image = self.select_image(deduplicate(image_ids)).await?;
+        let item = self.select_item(deduplicate(item_ids)).await?;
 
         let mut res = vec![];
         res.extend(text.into_iter().map(SelectResultEntity::Text));
@@ -299,22 +301,27 @@ impl DB {
         ids: Vec<impl AsRef<str>>,
     ) -> anyhow::Result<Vec<ContainRelationEntity>> {
         let mut result: Vec<Vec<ContainRelationEntity>> = vec![];
-        stream::iter(ids).then(|id| async move {
-            let mut resp = self
-                .client
-                .query(format!(
-                    "SELECT * from contains where out = {};",
-                    id.as_ref()
-                ))
-                .await?;
-            let result = resp.take::<Vec<ContainRelationEntity>>(0)?;
-            Ok::<_, anyhow::Error>(result)
-        }).collect::<Vec<_>>().await.into_iter().for_each(|res| match res { 
-            Ok(relations) => {
-                result.push(relations);
-            }
-            _ => {}
-        });
+        stream::iter(ids)
+            .then(|id| async move {
+                let mut resp = self
+                    .client
+                    .query(format!(
+                        "SELECT * from contains where out = {};",
+                        id.as_ref()
+                    ))
+                    .await?;
+                let result = resp.take::<Vec<ContainRelationEntity>>(0)?;
+                Ok::<_, anyhow::Error>(result)
+            })
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .for_each(|res| match res {
+                Ok(relations) => {
+                    result.push(relations);
+                }
+                _ => {}
+            });
         Ok(result.into_iter().flatten().collect())
     }
 
@@ -334,46 +341,50 @@ impl DB {
 
     async fn select_image(&self, ids: Vec<impl AsRef<str>>) -> anyhow::Result<Vec<ImageEntity>> {
         let mut result = vec![];
-        
-        stream::iter(ids).then(|id| async move {
-            let mut resp = self
-                .client
-                .query(format!(
-                    "SELECT * FROM {};",
-                    id.as_ref()
-                ))
-                .await?;
-            let result = resp.take::<Vec<ImageEntity>>(0)?;
-            Ok::<_, anyhow::Error>(result)
-        }).collect::<Vec<_>>().await.into_iter().for_each(|res| match res { 
-            Ok(image) => {
-                result.push(image);
-            }
-            _ => {}
-        });
+
+        stream::iter(ids)
+            .then(|id| async move {
+                let mut resp = self
+                    .client
+                    .query(format!("SELECT * FROM {};", id.as_ref()))
+                    .await?;
+                let result = resp.take::<Vec<ImageEntity>>(0)?;
+                Ok::<_, anyhow::Error>(result)
+            })
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .for_each(|res| match res {
+                Ok(image) => {
+                    result.push(image);
+                }
+                _ => {}
+            });
         Ok(result.into_iter().flatten().collect())
     }
 
     async fn select_item(&self, ids: Vec<impl AsRef<str>>) -> anyhow::Result<Vec<ItemEntity>> {
         let mut result = vec![];
-        
-        stream::iter(ids).then(|id| async move {
-            let mut resp = self
-                .client
-                .query(format!(
-                    "SELECT * FROM {} FETCH text, image;",
-                    id.as_ref()
-                ))
-                .await?;
-            let result = resp.take::<Vec<ItemEntity>>(0)?;
-            Ok::<_, anyhow::Error>(result)
-        }).collect::<Vec<_>>().await.into_iter().for_each(|res| match res { 
-            Ok(item) => {
-                result.push(item);
-            }
-            _ => {}
-        });
-        
+
+        stream::iter(ids)
+            .then(|id| async move {
+                let mut resp = self
+                    .client
+                    .query(format!("SELECT * FROM {} FETCH text, image;", id.as_ref()))
+                    .await?;
+                let result = resp.take::<Vec<ItemEntity>>(0)?;
+                Ok::<_, anyhow::Error>(result)
+            })
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .for_each(|res| match res {
+                Ok(item) => {
+                    result.push(item);
+                }
+                _ => {}
+            });
+
         Ok(result.into_iter().flatten().collect())
     }
 }
