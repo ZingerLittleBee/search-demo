@@ -26,7 +26,7 @@ function App() {
 
   return (
     <div className="w-screen h-screen flex flex-col justify-start items-center bg-backgroud gap-8 p-8">
-        <Tabs defaultValue="text" className="w-full max-w-[600px]">
+        <Tabs defaultValue="text" className="w-full max-w-2xl">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="text">文本</TabsTrigger>
                 <TabsTrigger value="image">图片</TabsTrigger>
@@ -98,7 +98,7 @@ function App() {
                 </Card>
             </TabsContent>
         </Tabs>
-        <div className="w-full">
+        <div className="w-full max-w-2xl">
             <p className="text-muted-foreground">响应</p>
             <Accordion type="multiple" className="w-full">
             <AccordionItem value="text" disabled={!resp?.text}>

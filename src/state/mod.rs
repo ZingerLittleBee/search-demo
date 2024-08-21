@@ -1,5 +1,7 @@
 pub(crate) mod data_handler;
 
+use crate::constant::{DATABASE_HOST, S3_ACCESS_KEY, S3_BUCKET, S3_ENDPOINT, S3_SECRET_KEY};
+use crate::db::s3::S3;
 use crate::db::DB;
 use crate::model::input::InputData;
 use crate::model::search::full_text::FullTextSearchResult;
@@ -10,11 +12,17 @@ use crate::rank::Rank;
 use crate::vo::SelectResultVo;
 use futures_util::{stream, StreamExt};
 use itertools::Itertools;
-use tracing::error;
+use minio::s3::args::{BucketExistsArgs, MakeBucketArgs};
+use minio::s3::client::{Client, ClientBuilder};
+use minio::s3::creds::StaticProvider;
+use minio::s3::http::BaseUrl;
+use std::env;
+use tracing::{error, info};
 
 pub struct AppState {
     pub db: DB,
     pub data_handler: data_handler::DataHandler,
+    pub s3: S3,
 }
 
 impl AppState {
@@ -24,6 +32,7 @@ impl AppState {
         Self {
             db,
             data_handler: data_handler::DataHandler::new().await,
+            s3: S3::new().await,
         }
     }
 
@@ -54,12 +63,11 @@ impl AppState {
 
                 let search_ids = Rank::rank((full_text_result, vector_result), Some(10))?
                     .into_iter()
-                    .unique().map(|s| s.id).collect();
+                    .unique()
+                    .map(|s| s.id)
+                    .collect();
 
-                let select_result = self
-                    .db
-                    .select_by_id(search_ids)
-                    .await?;
+                let select_result = self.db.select_by_id(search_ids).await?;
                 Ok(select_result.into())
             }
             SearchModel::Image(image) => {
@@ -162,12 +170,21 @@ impl AppState {
             }
         }
     }
+
+    // 存储图片
+    pub async fn upload_image(&self, file_name: String, data: Vec<u8>) -> anyhow::Result<String> {
+        self.s3.upload_image(file_name.as_str(), data).await?;
+        Ok(format!(
+            "{}/{}/{file_name}",
+            env::var(S3_ENDPOINT)?,
+            env::var(S3_BUCKET)?
+        ))
+    }
 }
 
 mod test {
     use crate::model::search::{ImageSearchData, ItemSearchData, SearchData};
     use crate::state::AppState;
-    use crate::utils::image::load_image_from_url;
     use dotenvy::dotenv;
     use tracing_subscriber::EnvFilter;
 

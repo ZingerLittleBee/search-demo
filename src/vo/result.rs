@@ -24,3 +24,21 @@ where
             .unwrap()
     }
 }
+
+impl HTTPResult<()> {
+    pub fn success() -> HTTPResult<()> {
+        HTTPResult {
+            status: 200,
+            message: None,
+            data: None,
+        }
+    }
+
+    pub fn error(status: u16, message: String) -> HTTPResult<()> {
+        HTTPResult {
+            status,
+            message: Some(message),
+            data: None,
+        }
+    }
+}

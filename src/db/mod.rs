@@ -1,5 +1,6 @@
 mod entity;
 mod sql;
+pub mod s3;
 
 use crate::constant::{
     DATABASE_HOST, DATABASE_NAME, DATABASE_NS, DATABASE_PASSWORD, DATABASE_PORT, DATABASE_USER,

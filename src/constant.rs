@@ -6,6 +6,12 @@ pub const DATABASE_PASSWORD: &str = "DATABASE_PASSWORD";
 pub const DATABASE_NS: &str = "DATABASE_NS";
 pub const DATABASE_NAME: &str = "DATABASE_NAME";
 
+pub const S3_ENDPOINT: &str = "S3_ENDPOINT";
+pub const S3_ACCESS_KEY: &str = "S3_ACCESS_KEY";
+pub const S3_SECRET_KEY: &str = "S3_SECRET_KEY";
+pub const S3_BUCKET: &str = "S3_BUCKET";
+
+
 pub const STOP_WORDS: [&str; 182] = [
     "i",
     "me",

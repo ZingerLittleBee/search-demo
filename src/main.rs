@@ -16,6 +16,7 @@ use crate::state::AppState;
 use axum::routing::{get, post};
 use axum::Router;
 use dotenvy::dotenv;
+use handler::upload::upload_image;
 use std::sync::Arc;
 use tracing::info;
 
@@ -38,6 +39,7 @@ async fn main() -> anyhow::Result<()> {
         .route("/inbound/text", post(inbound_text))
         .route("/inbound/image", post(inbound_image))
         .route("/inbound/item", post(inbound_item))
+        .route("/upload/image", post(upload_image))
         .with_state(shared_state);
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
