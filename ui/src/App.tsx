@@ -6,8 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import useSearch, {SearchResult} from "@/hook/useSearch.ts";
 import {useCallback, useMemo, useState} from "react";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './components/ui/accordion'
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './components/ui/carousel'
 import {cn} from "@/lib/utils.ts";
+import ImageWidget from "@/components/image.tsx";
 
 function App() {
     const [text, setText] = useState('')
@@ -125,23 +125,7 @@ function App() {
                         图片
                 </AccordionTrigger>
                 <AccordionContent className="flex justify-center">
-                    <Carousel className="w-full max-w-xs">
-                        <CarouselContent>
-                            {resp?.image.map((image, index) => (
-                                <CarouselItem key={index}>
-                                    <div className="p-1">
-                                        <Card>
-                                            <CardContent className="flex aspect-square items-center justify-center p-6">
-                                                <img src={image.url} alt={image.id} className="w-full h-full object-cover object-contain" />
-                                            </CardContent>
-                                        </Card>
-                                    </div>
-                                </CarouselItem>
-                            ))}
-                        </CarouselContent>
-                        <CarouselPrevious />
-                        <CarouselNext />
-                    </Carousel>
+                    <ImageWidget images={resp?.image ?? []} />
                 </AccordionContent>
             </AccordionItem>
             <AccordionItem value="item-3">
@@ -155,23 +139,7 @@ function App() {
                                 </CardHeader>
                                 <CardContent className="space-y-2 flex flex-col items-center">
                                     {item.text.map((text, index) => (<div key={index}>{text.data}</div>))}
-                                    <Carousel className="w-full max-w-xs flex justify-center">
-                                        <CarouselContent>
-                                            {item?.image.map((image, index) => (
-                                                <CarouselItem key={index}>
-                                                    <div className="p-1">
-                                                        <Card>
-                                                            <CardContent className="flex aspect-square items-center justify-center p-6">
-                                                                <img src={image.url} alt={image.id} className="w-full h-full object-contain" />
-                                                            </CardContent>
-                                                        </Card>
-                                                    </div>
-                                                </CarouselItem>
-                                            ))}
-                                        </CarouselContent>
-                                        <CarouselPrevious />
-                                        <CarouselNext />
-                                    </Carousel>
+                                    <ImageWidget images={item?.image ?? []} />
                                 </CardContent>
                             </Card>
                         ))
