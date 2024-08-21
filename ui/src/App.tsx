@@ -110,7 +110,7 @@ function App() {
             >
               文本
             </AccordionTrigger>
-            <AccordionContent>
+            <AccordionContent className="space-y-4">
               {resp?.text.map((item, index) => (
                 <Card key={index}>
                   <CardHeader>

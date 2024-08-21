@@ -57,17 +57,18 @@ impl Rank {
         (full_text_data, vector_data): (Vec<FullTextSearchResult>, Vec<VectorSearchResult>),
         drain: Option<usize>,
     ) -> anyhow::Result<Vec<RankResult>> {
-        let drain = drain.unwrap_or(10);
         let full_text_rank = Rank::full_text_rank(full_text_data, None)?;
         let vector_rank = Rank::vector_rank(vector_data, None)?;
         
-        println!("full_text_rank {:?}", full_text_rank);
-        println!("vector_rank {:?}", vector_rank);
+        println!("full_text_rank: {:?}", full_text_rank);
+        println!("vector_rank: {:?}", vector_rank);
         
         let mut rank_result = Rank::rrf(vec![full_text_rank, vector_rank], None);
         
-        println!("rank_result {:?}", rank_result);
-        
+        println!("rank_result: {:?}", rank_result);
+
+        let drain = std::cmp::min(drain.unwrap_or(rank_result.len()), rank_result.len());
+
         Ok(rank_result
             .drain(..drain)
             .collect())
