@@ -10,7 +10,7 @@ import { Label } from "./components/ui/label";
 import { Input } from "./components/ui/input";
 import { Button } from "./components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
-import useSearch, { SearchResult } from "@/hook/useSearch.ts";
+import useSearch from "@/hook/useSearch.ts";
 import { useCallback, useMemo, useState } from "react";
 import {
   Accordion,
@@ -21,10 +21,11 @@ import {
 import { cn } from "@/lib/utils.ts";
 import ImageWidget from "@/components/image.tsx";
 import { ImageUpload } from "./components/image-search";
+import useStore from "./store";
 
 function App() {
   const [text, setText] = useState("");
-  const [resp, setResp] = useState<SearchResult>();
+  const { resp, setResp } = useStore();
 
   const { searchWithText } = useSearch();
 
@@ -33,9 +34,13 @@ function App() {
       const resp = await searchWithText(text);
       setResp(resp);
     }
-  }, [text, searchWithText]);
+  }, [text, searchWithText, setResp]);
 
-  const hasImage = useMemo(() => (resp?.image.length ?? 0) > 0, [resp]);
+  const hasText = useMemo(() => (resp?.text ?? []).length > 0, [resp?.text]);
+  const hasImage = useMemo(() => (resp?.image ?? []).length > 0, [resp?.image]);
+  const hasItem = useMemo(() => (resp?.item ?? []).length > 0, [resp?.item]);
+
+  console.log("resp?.item", resp, hasItem);
 
   return (
     <div className="w-screen h-screen flex flex-col justify-start items-center bg-backgroud gap-8 p-8">
@@ -48,14 +53,11 @@ function App() {
         <TabsContent value="text">
           <Card>
             <CardHeader>
-              <CardTitle>Account</CardTitle>
-              <CardDescription>
-                Make changes to your account here. Click save when you're done.
-              </CardDescription>
+              <CardTitle>Text</CardTitle>
+              <CardDescription>Search with Text</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="space-y-1">
-                <Label htmlFor="text">Text</Label>
                 <Input
                   id="text"
                   value={text}
@@ -64,7 +66,7 @@ function App() {
               </div>
             </CardContent>
             <CardFooter>
-              <Button onClick={handleSearchText}>请求</Button>
+              <Button onClick={handleSearchText}>查询</Button>
             </CardFooter>
           </Card>
         </TabsContent>
@@ -72,9 +74,7 @@ function App() {
           <Card>
             <CardHeader>
               <CardTitle>Image</CardTitle>
-              <CardDescription>
-                Change your password here. After saving, you'll be logged out.
-              </CardDescription>
+              <CardDescription>Search with Image</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <ImageUpload />
@@ -84,10 +84,8 @@ function App() {
         <TabsContent value="item">
           <Card>
             <CardHeader>
-              <CardTitle>Password</CardTitle>
-              <CardDescription>
-                Change your password here. After saving, you'll be logged out.
-              </CardDescription>
+              <CardTitle>Item</CardTitle>
+              <CardDescription>Search with Item</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <div className="space-y-1">
@@ -108,11 +106,9 @@ function App() {
       <div className="w-full max-w-2xl">
         <p className="text-muted-foreground">响应</p>
         <Accordion type="multiple" className="w-full">
-          <AccordionItem value="text" disabled={!resp?.text}>
+          <AccordionItem value="text" disabled={!hasText}>
             <AccordionTrigger
-              className={cn(
-                !resp?.text && "line-through text-muted-foreground",
-              )}
+              className={cn(!hasText && "line-through text-muted-foreground")}
             >
               文本
             </AccordionTrigger>
@@ -137,8 +133,12 @@ function App() {
               <ImageWidget images={resp?.image ?? []} />
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="item-3">
-            <AccordionTrigger>组合</AccordionTrigger>
+          <AccordionItem value="item" disabled={!hasItem}>
+            <AccordionTrigger
+              className={cn(!hasItem && "line-through text-muted-foreground")}
+            >
+              组合
+            </AccordionTrigger>
             <AccordionContent className="space-y-4">
               {resp?.item.map((item, index) => (
                 <Card key={index}>

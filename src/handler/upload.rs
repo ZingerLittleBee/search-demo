@@ -7,29 +7,24 @@ use std::sync::Arc;
 pub async fn upload_image(
     State(state): State<Arc<AppState>>,
     mut multipart: Multipart,
-) -> HTTPResult<()> {
-    loop {
-        let field = match multipart.next_field().await {
-            Ok(Some(field)) => field,
-            Ok(None) => break,
-            Err(e) => {
-                return HTTPResult::error(400, format!("Failed to read multipart field: {}", e))
-            }
-        };
+) -> HTTPResult<Vec<String>> {
+    let mut urls = Vec::new();
 
-        let name = match field.name() {
-            Some(name) => name.to_string(),
-            None => return HTTPResult::error(400, "Field name is missing".to_string()),
-        };
+    while let Some(field) = multipart.next_field().await.unwrap() {
+        let file_name = field.name().unwrap().to_string();
+        let data_byte = field.bytes().await.unwrap();
 
-        let data = match field.bytes().await {
-            Ok(data) => data,
-            Err(e) => return HTTPResult::error(400, format!("Failed to read field data: {}", e)),
-        };
+        let url = state
+            .upload_image(file_name, data_byte.to_vec())
+            .await
+            .unwrap();
 
-        if let Err(e) = state.upload_image(name, data.to_vec()).await {
-            return HTTPResult::error(500, format!("Failed to upload image: {}", e));
-        }
+        urls.push(url)
     }
-    HTTPResult::success()
+
+    HTTPResult {
+        status: 200,
+        data: Some(urls),
+        message: None,
+    }
 }
