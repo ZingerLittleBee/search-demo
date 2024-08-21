@@ -13,8 +13,6 @@ function App() {
     const [text, setText] = useState('')
     const [resp, setResp] = useState<SearchResult>()
 
-    console.log('resp', resp, resp?.image.length)
-
     const { searchWithText } = useSearch()
 
     const handleSearchText = useCallback(async () => {
@@ -27,7 +25,7 @@ function App() {
     const hasImage = useMemo(() => (resp?.image.length ?? 0) > 0, [resp])
 
   return (
-    <div className="w-screen h-screen flex flex-col justify-start bg-backgroud gap-8 p-8">
+    <div className="w-screen h-screen flex flex-col justify-start items-center bg-backgroud gap-8 p-8">
         <Tabs defaultValue="text" className="w-full max-w-[600px]">
             <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="text">文本</TabsTrigger>
@@ -100,7 +98,7 @@ function App() {
                 </Card>
             </TabsContent>
         </Tabs>
-        <div>
+        <div className="w-full">
             <p className="text-muted-foreground">响应</p>
             <Accordion type="multiple" className="w-full">
             <AccordionItem value="text" disabled={!resp?.text}>
@@ -134,7 +132,7 @@ function App() {
                                     <div className="p-1">
                                         <Card>
                                             <CardContent className="flex aspect-square items-center justify-center p-6">
-                                                <img src={image.url} alt={image.id} className="w-full h-full object-cover" />
+                                                <img src={image.url} alt={image.id} className="w-full h-full object-cover object-contain" />
                                             </CardContent>
                                         </Card>
                                     </div>
@@ -148,8 +146,36 @@ function App() {
             </AccordionItem>
             <AccordionItem value="item-3">
                 <AccordionTrigger>组合</AccordionTrigger>
-                <AccordionContent>
-                    Yes. It's animated by default, but you can disable it if you prefer.
+                <AccordionContent className="space-y-4">
+                    {
+                        resp?.item.map((item, index) => (
+                            <Card key={index}>
+                                <CardHeader>
+                                    <CardTitle>{item.id}</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-2 flex flex-col items-center">
+                                    {item.text.map((text, index) => (<div key={index}>{text.data}</div>))}
+                                    <Carousel className="w-full max-w-xs flex justify-center">
+                                        <CarouselContent>
+                                            {item?.image.map((image, index) => (
+                                                <CarouselItem key={index}>
+                                                    <div className="p-1">
+                                                        <Card>
+                                                            <CardContent className="flex aspect-square items-center justify-center p-6">
+                                                                <img src={image.url} alt={image.id} className="w-full h-full object-contain" />
+                                                            </CardContent>
+                                                        </Card>
+                                                    </div>
+                                                </CarouselItem>
+                                            ))}
+                                        </CarouselContent>
+                                        <CarouselPrevious />
+                                        <CarouselNext />
+                                    </Carousel>
+                                </CardContent>
+                            </Card>
+                        ))
+                    }
                 </AccordionContent>
             </AccordionItem>
         </Accordion>
