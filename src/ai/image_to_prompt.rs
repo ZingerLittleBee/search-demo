@@ -1,5 +1,7 @@
+use std::io::Cursor;
 use base64::engine::general_purpose;
 use base64::Engine;
+use image::ImageReader;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use tokio::fs::File;
@@ -29,12 +31,19 @@ struct ResponseData {
 }
 
 pub async fn image_to_prompt(image: impl AsRef<[u8]>) -> anyhow::Result<String> {
+    let mut reader = ImageReader::new(Cursor::new(image)).with_guessed_format()?;
+    let mut png_data: Vec<u8> = Vec::new();
+    {
+        let image = reader.decode()?;
+        image.write_to(&mut Cursor::new(&mut png_data), image::ImageFormat::Png)?;
+    }
+    
     let client = Client::new();
     let request_data = RequestData {
         model: "llava".to_string(),
         prompt: "What is in this picture?".to_string(),
         stream: false,
-        images: vec![general_purpose::STANDARD.encode(image)],
+        images: vec![general_purpose::STANDARD.encode(&png_data)],
     };
 
     let response = client
@@ -69,6 +78,7 @@ mod test {
     async fn test_image_to_prompt() {
         let image1 = crate::ai::image_to_prompt::read_image_from_path("test/image.png").await.unwrap();
         let image2 = crate::ai::image_to_prompt::read_image_from_path("test/img2.jpeg").await.unwrap();
+        let image3 = crate::ai::image_to_prompt::read_image_from_path("test/thumbnail.png").await.unwrap();
 
         println!(
             "image1 to prompt: {}",
@@ -77,6 +87,10 @@ mod test {
         println!(
             "image2 to prompt: {}",
             super::image_to_prompt(image2).await.unwrap()
+        );        
+        println!(
+            "image3 to prompt: {}",
+            super::image_to_prompt(image3).await.unwrap()
         );
     }
 }

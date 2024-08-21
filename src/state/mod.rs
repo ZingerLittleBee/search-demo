@@ -1,6 +1,6 @@
 pub(crate) mod data_handler;
 
-use crate::constant::{DATABASE_HOST, S3_ACCESS_KEY, S3_BUCKET, S3_ENDPOINT, S3_SECRET_KEY};
+use crate::constant::{S3_BUCKET, S3_ENDPOINT};
 use crate::db::s3::S3;
 use crate::db::DB;
 use crate::model::input::InputData;
@@ -187,6 +187,7 @@ mod test {
     use crate::state::AppState;
     use dotenvy::dotenv;
     use tracing_subscriber::EnvFilter;
+    use crate::utils::image::load_image_from_url;
 
     async fn setup() -> AppState {
         dotenv().ok();

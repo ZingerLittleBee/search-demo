@@ -40,8 +40,6 @@ function App() {
   const hasImage = useMemo(() => (resp?.image ?? []).length > 0, [resp?.image]);
   const hasItem = useMemo(() => (resp?.item ?? []).length > 0, [resp?.item]);
 
-  console.log("resp?.item", resp, hasItem);
-
   return (
     <div className="w-screen h-screen flex flex-col justify-start items-center bg-backgroud gap-8 p-8">
       <Tabs defaultValue="text" className="w-full max-w-2xl">

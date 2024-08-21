@@ -11,7 +11,7 @@ pub async fn upload_image(
     let mut urls = Vec::new();
 
     while let Some(field) = multipart.next_field().await.unwrap() {
-        let file_name = field.name().unwrap().to_string();
+        let file_name = field.file_name().unwrap().to_string();
         let data_byte = field.bytes().await.unwrap();
 
         let url = state
