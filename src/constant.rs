@@ -11,6 +11,8 @@ pub const S3_ACCESS_KEY: &str = "S3_ACCESS_KEY";
 pub const S3_SECRET_KEY: &str = "S3_SECRET_KEY";
 pub const S3_BUCKET: &str = "S3_BUCKET";
 
+pub const OLLAMA_ENDPOINT: &str = "OLLAMA_ENDPOINT";
+
 
 pub const STOP_WORDS: [&str; 182] = [
     "i",
