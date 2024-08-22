@@ -75,8 +75,33 @@ export default function useSearch() {
         }
     }
 
+    const searchWithItem = async (item: { text: string[]; image: string[] }): Promise<SearchResult | undefined> => {
+        const { text, image } = item
+        try {
+            const resp = await fetch('/api/search/item', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text, image })
+            })
+            const result: Result<SearchResult> = await resp.json()
+
+            if (result.message) {
+                toast(result.message)
+                return
+            }
+
+            return result.data
+        } catch (e) {
+            console.error(e)
+            toast(`Failed to search with item: ${item}`)
+        }
+    }
+
     return {
         searchWithText,
-        searchWithImage
+        searchWithImage,
+        searchWithItem
     }
 }

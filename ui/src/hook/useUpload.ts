@@ -2,10 +2,12 @@ import { toast } from "sonner";
 import { Result } from "./useSearch";
 
 export default function useUpload() {
-  const uploadImage = async (file: File): Promise<string[]> => {
+  const uploadImage = async (files: File[]): Promise<string[]> => {
     try {
       const formData = new FormData();
-      formData.append("file", file, file.name);
+      files.forEach((file, index) => {
+        formData.append(`file-${index}`, file, file.name);
+      });
 
       const resp = await fetch("/api/upload/image", {
         method: "POST",
@@ -22,7 +24,7 @@ export default function useUpload() {
       return result.data ?? [];
     } catch (e) {
       console.error(e);
-      toast(`Failed to upload image: ${file.name}`);
+      toast(`Failed to upload image: ${files.map((file) => file.name).join(", ")}`);
     }
     return [];
   };

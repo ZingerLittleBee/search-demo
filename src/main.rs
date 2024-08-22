@@ -18,6 +18,7 @@ use axum::Router;
 use dotenvy::dotenv;
 use handler::upload::upload_image;
 use std::sync::Arc;
+use axum::extract::DefaultBodyLimit;
 use tracing::info;
 
 #[tokio::main]
@@ -40,7 +41,8 @@ async fn main() -> anyhow::Result<()> {
         .route("/inbound/image", post(inbound_image))
         .route("/inbound/item", post(inbound_item))
         .route("/upload/image", post(upload_image))
-        .with_state(shared_state);
+        .with_state(shared_state)
+        .layer(DefaultBodyLimit::max(10 * 1024 * 1024 * 1024));
 
     let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
     info!("listening on {}", listener.local_addr()?);

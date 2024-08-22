@@ -22,7 +22,7 @@ pub struct SearchWithImageParam {
 #[derive(Debug, serde::Deserialize)]
 pub struct SearchWithItemParam {
     text: Vec<String>,
-    url: Vec<String>,
+    image: Vec<String>,
 }
 
 pub async fn search_with_text(
@@ -94,7 +94,7 @@ pub async fn search_with_item(
         .collect();
     let mut search_image_vec = vec![];
 
-    stream::iter(input.url)
+    stream::iter(input.image)
         .then(|url_str| async move { ImageSearchData::from_url(&url_str).await })
         .collect::<Vec<_>>()
         .await
