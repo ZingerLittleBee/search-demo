@@ -10,6 +10,9 @@ DEFINE TABLE IF NOT EXISTS text;
 -- 定义 "text" 表的字段
 DEFINE FIELD IF NOT EXISTS data ON TABLE text TYPE string;
 DEFINE FIELD IF NOT EXISTS vector ON TABLE text TYPE array;
+-- 翻译成英文
+DEFINE FIELD IF NOT EXISTS en_data ON TABLE text TYPE string;
+DEFINE FIELD IF NOT EXISTS en_vector ON TABLE text TYPE array;
 
 -- 创建 "image" 表
 DEFINE TABLE IF NOT EXISTS image;
@@ -44,5 +47,6 @@ DEFINE ANALYZER IF NOT EXISTS mixed_analyzer TOKENIZERS blank, class, punct FILT
 
 -- 定义索引
 DEFINE INDEX IF NOT EXISTS mixed_index_text_data ON text FIELDS data SEARCH ANALYZER mixed_analyzer BM25 HIGHLIGHTS;
+DEFINE INDEX IF NOT EXISTS mixed_index_text_en_data ON text FIELDS en_data SEARCH ANALYZER mixed_analyzer BM25 HIGHLIGHTS;
 DEFINE INDEX IF NOT EXISTS mixed_index_image_prompt ON image FIELDS prompt SEARCH ANALYZER mixed_analyzer BM25 HIGHLIGHTS;
 "#;

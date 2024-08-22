@@ -73,7 +73,9 @@ impl DB {
                 "
         CREATE text CONTENT {
 	        data: $data,
-	        vector: $vector
+	        vector: $vector,
+            en_data: $en_data,
+            en_vector: $en_vector
         }",
             )
             .bind(format_input)
@@ -416,6 +418,8 @@ mod test {
         let text = crate::model::TextModel {
             data: "Hello, World!".to_string(),
             vector: gen_vector(),
+            en_data: "Hello, World!".to_string(),
+            en_vector: gen_vector()
         };
         db.insert_text(text).await.unwrap();
         let res = db
@@ -454,10 +458,14 @@ mod test {
                 crate::model::TextModel {
                     data: "Hello, World!".to_string(),
                     vector: handler.get_text_embedding("Hello, World!").await.unwrap(),
+                    en_data: "Hello, World!".to_string(),
+                    en_vector: gen_vector()
                 },
                 crate::model::TextModel {
                     data: "Hello, World2!".to_string(),
                     vector: handler.get_text_embedding("Hello, World2!").await.unwrap(),
+                    en_data: "Hello, World!".to_string(),
+                    en_vector: gen_vector()
                 },
             ],
             image: vec![

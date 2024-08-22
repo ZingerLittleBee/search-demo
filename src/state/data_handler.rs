@@ -13,6 +13,7 @@ use futures::future::join_all;
 use regex::Regex;
 use std::env;
 use std::path::PathBuf;
+use crate::ai::translation::translate_into_english;
 
 pub struct DataHandler {
     clip: CLIP,
@@ -88,9 +89,13 @@ impl DataHandler {
 impl DataHandler {
     async fn text_input_data_to_model(&self, input: &TextInputData) -> anyhow::Result<TextModel> {
         let vector = self.get_text_embedding(input.0.as_str()).await?;
+        let en_data  = translate_into_english(input.0.as_str()).await?;
+        let en_vector = self.get_text_embedding(en_data.as_str()).await?;
         Ok(TextModel {
             data: input.0.clone(),
             vector: vector.to_vec(),
+            en_data,
+            en_vector
         })
     }
 

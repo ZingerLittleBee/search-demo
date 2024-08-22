@@ -21,6 +21,8 @@ pub struct ItemModel {
 pub struct TextModel {
     pub data: String,
     pub vector: Vec<f32>,
+    pub en_data: String,
+    pub en_vector: Vec<f32>,
 }
 
 #[derive(Serialize, Deserialize)]
