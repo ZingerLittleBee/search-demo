@@ -109,10 +109,16 @@ impl DB {
 
         input.text.iter().enumerate().for_each(|(i, text)| {
             create_text_sql_vec.push(format!(
-                "LET $text_{} = (CREATE ONLY text CONTENT {{data: '{}', vector: [{}]}}).id;",
+                "LET $text_{} = (CREATE ONLY text CONTENT {{data: '{}', vector: [{}], en_data: '{}', en_vector: [{}] }}).id;",
                 i,
                 escape_single_quotes(text.data.as_str()),
                 text.vector
+                    .iter()
+                    .map(|v| v.to_string())
+                    .collect::<Vec<String>>()
+                    .join(", "),
+                escape_single_quotes(text.en_data.as_str()),
+                text.en_vector
                     .iter()
                     .map(|v| v.to_string())
                     .collect::<Vec<String>>()

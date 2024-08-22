@@ -9,6 +9,7 @@ pub struct FullTextSearchResult {
 
 pub enum FullTextSearchTable {
     Text,
+    EnText,
     Image,
 }
 
@@ -16,6 +17,7 @@ impl FullTextSearchTable {
     pub fn table_name(&self) -> &str {
         match self {
             FullTextSearchTable::Text => "text",
+            FullTextSearchTable::EnText => "text",
             FullTextSearchTable::Image => "image",
         }
     }
@@ -23,10 +25,14 @@ impl FullTextSearchTable {
     pub fn column_name(&self) -> &str {
         match self {
             FullTextSearchTable::Text => "data",
+            FullTextSearchTable::EnText => "en_data",
             FullTextSearchTable::Image => "prompt",
         }
     }
 }
 
-pub const FULL_TEXT_SEARCH_TABLE: [FullTextSearchTable; 2] =
-    [FullTextSearchTable::Text, FullTextSearchTable::Image];
+pub const FULL_TEXT_SEARCH_TABLE: [FullTextSearchTable; 3] = [
+    FullTextSearchTable::Text,
+    FullTextSearchTable::EnText,
+    FullTextSearchTable::Image,
+];
