@@ -11,14 +11,16 @@ mod utils;
 
 use crate::handler::health_handler;
 use crate::handler::inbound::{inbound_image, inbound_item, inbound_text};
+use crate::handler::local::{index_handler, static_handler};
 use crate::handler::search::{search_with_image, search_with_item, search_with_text};
 use crate::state::AppState;
+use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
 use axum::Router;
 use dotenvy::dotenv;
+use handler::get_routes;
 use handler::upload::upload_image;
 use std::sync::Arc;
-use axum::extract::DefaultBodyLimit;
 use tracing::info;
 
 #[tokio::main]
@@ -33,14 +35,9 @@ async fn main() -> anyhow::Result<()> {
     let shared_state = Arc::new(AppState::new().await);
 
     let app = Router::new()
-        .route("/health", get(health_handler))
-        .route("/search/text", post(search_with_text))
-        .route("/search/image", post(search_with_image))
-        .route("/search/item", post(search_with_item))
-        .route("/inbound/text", post(inbound_text))
-        .route("/inbound/image", post(inbound_image))
-        .route("/inbound/item", post(inbound_item))
-        .route("/upload/image", post(upload_image))
+        .nest("/api", get_routes())
+        .route("/", get(index_handler))
+        .route("/*file", get(static_handler))
         .with_state(shared_state)
         .layer(DefaultBodyLimit::max(10 * 1024 * 1024 * 1024));
 
