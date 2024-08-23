@@ -6,7 +6,6 @@ pub mod model;
 mod rank;
 mod state;
 mod vo;
-
 mod utils;
 
 use crate::handler::health_handler;

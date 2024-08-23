@@ -1,6 +1,13 @@
 # Search Demo
 
-## 开发前准备
+## 如何使用
+```bash
+docker-compose up -d
+```
+访问 [http://localhost:3000](http://localhost:3000)
+
+
+## 如何开发
 ### 启动 surreal db 服务
 ```docker
 docker-compose up -d
