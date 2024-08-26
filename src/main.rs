@@ -5,8 +5,8 @@ mod handler;
 pub mod model;
 mod rank;
 mod state;
-mod vo;
 mod utils;
+mod vo;
 
 use crate::handler::health_handler;
 use crate::handler::inbound::{inbound_image, inbound_item, inbound_text};
@@ -40,7 +40,7 @@ async fn main() -> anyhow::Result<()> {
         .with_state(shared_state)
         .layer(DefaultBodyLimit::max(10 * 1024 * 1024 * 1024));
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
+    let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     info!("listening on {}", listener.local_addr()?);
     axum::serve(listener, app).await?;
 

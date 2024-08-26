@@ -1,7 +1,8 @@
 services:
   surrealdb:
     container_name: muse-surrealdb
-    image: surrealdb/surrealdb:v2.0.0-alpha.9
+#    image: surrealdb/surrealdb:v2.0.0-alpha.9
+    image: zingerbee/surrealdb:latest
     restart: always
     command: start -u ${DATABASE_USER} -p ${DATABASE_PASSWORD} --log trace file:/mydata/mydatabase.db
     user: root

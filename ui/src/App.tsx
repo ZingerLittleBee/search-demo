@@ -22,12 +22,13 @@ import ImageWidget from "@/components/image.tsx";
 import { ImageUpload } from "./components/image-search";
 import useStore from "./store";
 import ItemSearchWidget from "@/components/item-search.tsx";
+import { LoaderCircle } from "lucide-react";
 
 function App() {
   const [text, setText] = useState("");
   const { resp, setResp } = useStore();
 
-  const { searchWithText } = useSearch();
+  const { searchWithText, isLoading } = useSearch();
 
   const handleSearchText = useCallback(async () => {
     if (text) {
@@ -42,7 +43,7 @@ function App() {
 
   return (
     <div className="w-screen h-screen flex flex-col justify-start items-center bg-backgroud gap-8 p-8">
-        <h1 className="font-bold text-3xl">Search Demo</h1>
+      <h1 className="font-bold text-3xl">Search Demo</h1>
       <Tabs defaultValue="text" className="w-full max-w-2xl ">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="text">文本</TabsTrigger>
@@ -92,12 +93,20 @@ function App() {
           </Card>
         </TabsContent>
       </Tabs>
-      <div className="w-full max-w-2xl">
-        <p className="text-muted-foreground">响应</p>
-        <Accordion type="multiple" className="w-full">
-          <AccordionItem value="text" disabled={!hasText}>
-            <AccordionTrigger
-              className={cn(!hasText && "line-through text-muted-foreground")}
+      <div className="max-w-2xl w-full relative">
+        {
+            isLoading && <div className="absolute w-full h-full bg-black/80 cursor-progress rounded-lg">
+              <div className="absolute translate-x-[-50%] translate-y-[-50%] top-1/2 left-1/2">
+                <LoaderCircle className="animate-spin text-white"/>
+              </div>
+            </div>
+        }
+        <div className="w-full">
+          <p className="text-muted-foreground">响应</p>
+          <Accordion type="multiple" className="w-full">
+            <AccordionItem value="text" disabled={!hasText}>
+              <AccordionTrigger
+                  className={cn(!hasText && "line-through text-muted-foreground")}
             >
               文本
             </AccordionTrigger>
@@ -145,6 +154,7 @@ function App() {
             </AccordionContent>
           </AccordionItem>
         </Accordion>
+      </div>
       </div>
     </div>
   );
