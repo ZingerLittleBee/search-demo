@@ -1,16 +1,18 @@
-import { useState, useCallback } from 'react'
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { PlusIcon, MinusIcon } from 'lucide-react'
+import {useCallback, useState} from 'react'
+import {Button} from "@/components/ui/button"
+import {Input} from "@/components/ui/input"
+import {Label} from "@/components/ui/label"
+import {MinusIcon, PlusIcon} from 'lucide-react'
 import useSearch from "@/hook/useSearch.ts";
 import useUpload from "@/hook/useUpload.ts";
-import useStore from "@/store";
+import useStore, {ActionType} from "@/store";
+import useAdd from "@/hook/useAdd.ts";
 
-export default function ItemSearchWidget() {
+export default function ItemWidget() {
     const { searchWithItem } = useSearch()
     const { uploadImage } = useUpload()
-    const { setResp } = useStore()
+    const { setResp, action } = useStore()
+    const { addItem } = useAdd()
 
     const [textInputs, setTextInputs] = useState([''])
     const [imageInputs, setImageInputs] = useState<{
@@ -50,8 +52,15 @@ export default function ItemSearchWidget() {
         if (imageFile.length > 0) {
             image.concat(await uploadImage(imageFile))
         }
-        const res = await searchWithItem({ text, image })
-        setResp(res)
+        
+        
+        if (action === ActionType.Search) {
+            const res = await searchWithItem({ text, image })
+            setResp(res)    
+        } else {
+            await addItem({ text, image })
+        }
+        
     }, [textInputs, imageInputs])
 
     return (
@@ -122,7 +131,7 @@ export default function ItemSearchWidget() {
             </div>
             <div className="space-y-2">
                 <Label className="text-muted-foreground">所有图片不超过 10 MB</Label>
-                <Button type="submit" className="w-full">查询</Button>
+                <Button type="submit" className="w-full">{action === ActionType.Search ? "查询" : "添加"}</Button>
             </div>
         </form>
     )

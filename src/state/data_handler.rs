@@ -14,6 +14,7 @@ use regex::Regex;
 use std::env;
 use std::path::PathBuf;
 use crate::ai::translation::translate_into_english;
+use crate::utils::deduplicate;
 
 pub struct DataHandler {
     clip: CLIP,
@@ -69,7 +70,7 @@ impl DataHandler {
             .map(|s| s.to_string())
             .collect();
 
-        Ok(tokens)
+        Ok(deduplicate(tokens))
     }
 
     pub async fn get_text_embedding(&self, data: &str) -> anyhow::Result<Vec<f32>> {
