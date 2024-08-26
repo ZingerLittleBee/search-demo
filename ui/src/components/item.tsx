@@ -26,7 +26,7 @@ export default function ItemWidget() {
         } else {
             setImageInputs(prev => [...prev, {}])
         }
-    }, [])
+    }, [setTextInputs, setImageInputs])
 
     const removeInput = useCallback((type: 'text' | 'image', index: number) => {
         if (type === 'text') {
@@ -34,15 +34,15 @@ export default function ItemWidget() {
         } else {
             setImageInputs(prev => prev.filter((_, i) => i !== index))
         }
-    }, [])
+    }, [setTextInputs, setImageInputs])
 
     const handleTextChange = useCallback((index: number, value: string) => {
         setTextInputs(prev => prev.map((item, i) => i === index ? value : item))
-    }, [])
+    }, [setTextInputs])
 
     const handleImageChange = useCallback((index: number, file: File | null) => {
         setImageInputs(prev => prev.map((item, i) => i === index ? (file ? {file, url: URL.createObjectURL(file)} : {}) : item))
-    }, [])
+    }, [setImageInputs])
 
     const handleSubmit = useCallback(async (e: React.FormEvent) => {
         e.preventDefault()
@@ -52,15 +52,15 @@ export default function ItemWidget() {
         if (imageFile.length > 0) {
             image.concat(await uploadImage(imageFile))
         }
-        
-        
+
+
         if (action === ActionType.Search) {
             const res = await searchWithItem({ text, image })
-            setResp(res)    
+            setResp(res)
         } else {
             await addItem({ text, image })
         }
-        
+
     }, [textInputs, imageInputs])
 
     return (

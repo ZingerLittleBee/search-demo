@@ -1,7 +1,7 @@
-import {ImageResult} from "@/hook/useSearch.ts";
 import {Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious} from "@/components/ui/carousel.tsx";
 import {Card, CardContent} from "@/components/ui/card.tsx";
 import {Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import {ImageResult} from "@/types.ts";
 
 export default function Gallery({images}: { images: ImageResult[]}) {
     return <Carousel className="w-full max-w-xs">

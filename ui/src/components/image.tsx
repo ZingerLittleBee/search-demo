@@ -28,7 +28,7 @@ export default function ImageWidget() {
         event.target.value = "";
       }
     }
-  }, [])
+  }, [setFile, setUrl])
 
   const handleSearch = useCallback(async () => {
     if (file) {

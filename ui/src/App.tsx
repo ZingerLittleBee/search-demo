@@ -1,29 +1,20 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
-import { useMemo } from "react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "./components/ui/accordion";
-import { cn } from "@/lib/utils.ts";
+import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from "./components/ui/card";
+import {Tabs, TabsContent, TabsList, TabsTrigger} from "./components/ui/tabs";
+import {useMemo} from "react";
+import {Accordion, AccordionContent, AccordionItem, AccordionTrigger,} from "./components/ui/accordion";
+import {cn} from "@/lib/utils.ts";
 import ImageWidget from "@/components/image.tsx";
-import useStore from "./store";
-import { LoaderCircle } from "lucide-react";
-import AddWidget from "@/components/add.tsx";
+import useStore, {ActionType} from "./store";
+import {LoaderCircle} from "lucide-react";
+import AddWidget from "@/components/action.tsx";
 import TextWidget from "@/components/text.tsx";
 import Gallery from "@/components/gallery.tsx";
 import ItemWidget from "./components/item";
 
 function App() {
-  const { resp, isLoading } = useStore();
+  const { resp, isLoading, action } = useStore();
+  
+  const isSearch = useMemo(() => action === ActionType.Search, [action]);
 
   const hasText = useMemo(() => (resp?.text ?? []).length > 0, [resp?.text]);
   const hasImage = useMemo(() => (resp?.image ?? []).length > 0, [resp?.image]);
@@ -44,7 +35,7 @@ function App() {
               <Card>
                 <CardHeader>
                   <CardTitle>Text</CardTitle>
-                  <CardDescription>Search with Text</CardDescription>
+                  <CardDescription>{isSearch ? 'Search' : 'Add'} with Text</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <TextWidget />
@@ -55,7 +46,7 @@ function App() {
               <Card>
                 <CardHeader>
                   <CardTitle>Image</CardTitle>
-                  <CardDescription>Search with Image</CardDescription>
+                  <CardDescription>{isSearch ? 'Search' : 'Add'} with Image</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <ImageWidget />
@@ -66,7 +57,7 @@ function App() {
               <Card>
                 <CardHeader>
                   <CardTitle>Item</CardTitle>
-                  <CardDescription>Search with Item</CardDescription>
+                  <CardDescription>{isSearch ? 'Search' : 'Add'} with Item</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <ItemWidget/>
