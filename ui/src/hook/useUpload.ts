@@ -1,5 +1,5 @@
 import { toast } from "sonner";
-import { Result } from "./useSearch";
+import {Result} from "@/types.ts";
 
 export default function useUpload() {
   const uploadImage = async (files: File[]): Promise<string[]> => {

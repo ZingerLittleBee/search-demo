@@ -1,6 +1,6 @@
 import {Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious} from "@/components/ui/carousel.tsx";
 import {Card, CardContent} from "@/components/ui/card.tsx";
-import {Dialog, DialogContent, DialogTrigger } from "./ui/dialog";
+import {Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "./ui/dialog";
 import {ImageResult} from "@/types.ts";
 
 export default function Gallery({images}: { images: ImageResult[]}) {
@@ -17,11 +17,13 @@ export default function Gallery({images}: { images: ImageResult[]}) {
                                              className="w-full h-full object-contain"/>
                                     </DialogTrigger>
                                     <DialogContent className="sm:max-w-[425px]">
+                                        <DialogTitle></DialogTitle>
+                                        <DialogDescription>
                                         <img src={image.url} alt={image.id}
                                              className="w-full h-full object-contain"/>
+                                        </DialogDescription>
                                     </DialogContent>
                                 </Dialog>
-
                             </CardContent>
                         </Card>
                     </div>

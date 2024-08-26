@@ -111,7 +111,9 @@ function App() {
                           {item.text.map((text, index) => (
                               <div key={index}>{text.data}</div>
                           ))}
-                          <Gallery images={item?.image ?? []}/>
+                          {
+                            item.image.length > 0 && <Gallery images={item.image}/>
+                          }
                         </CardContent>
                       </Card>
                   ))}
