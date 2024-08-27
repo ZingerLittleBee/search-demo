@@ -8,6 +8,8 @@ use axum::Json;
 use futures_util::{stream, StreamExt};
 use std::sync::Arc;
 use tracing::error;
+use tracing::info;
+use track_macro::expensive_log;
 
 #[derive(Debug, serde::Deserialize)]
 pub struct SearchWithTextParam {
@@ -25,6 +27,7 @@ pub struct SearchWithItemParam {
     image: Vec<String>,
 }
 
+#[expensive_log]
 pub async fn search_with_text(
     State(state): State<Arc<AppState>>,
     Json(input): Json<SearchWithTextParam>,
@@ -48,6 +51,7 @@ pub async fn search_with_text(
     }
 }
 
+#[expensive_log]
 pub async fn search_with_image(
     State(state): State<Arc<AppState>>,
     Json(input): Json<SearchWithImageParam>,
@@ -83,6 +87,7 @@ pub async fn search_with_image(
     }
 }
 
+#[expensive_log]
 pub async fn search_with_item(
     State(state): State<Arc<AppState>>,
     Json(input): Json<SearchWithItemParam>,

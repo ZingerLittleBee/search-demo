@@ -18,6 +18,7 @@ use minio::s3::creds::StaticProvider;
 use minio::s3::http::BaseUrl;
 use std::env;
 use tracing::{error, info};
+use track_macro::expensive_log;
 
 pub struct AppState {
     pub db: DB,
@@ -36,6 +37,7 @@ impl AppState {
         }
     }
 
+    #[expensive_log]
     // 数据入库
     pub async fn data_ingestion(&self, input_data: InputData) -> anyhow::Result<()> {
         match self.data_handler.handle_input_data(input_data).await? {
@@ -46,6 +48,7 @@ impl AppState {
         Ok(())
     }
 
+    #[expensive_log]
     /// 数据查询
     /// 1. 文本搜索 -> 分词全文搜索和向量搜索
     /// 2. 图片搜索 -> prompt（文本搜索流程），图片向量搜索
@@ -171,6 +174,7 @@ impl AppState {
         }
     }
 
+    #[expensive_log]
     // 存储图片
     pub async fn upload_image(&self, file_name: String, data: Vec<u8>) -> anyhow::Result<String> {
         self.s3.upload_image(file_name.as_str(), data).await?;

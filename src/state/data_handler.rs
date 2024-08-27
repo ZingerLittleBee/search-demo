@@ -13,8 +13,10 @@ use futures::future::join_all;
 use regex::Regex;
 use std::env;
 use std::path::PathBuf;
+use track_macro::expensive_log;
 use crate::ai::translation::translate_into_english;
 use crate::utils::deduplicate;
+use tracing::info;
 
 pub struct DataHandler {
     clip: CLIP,
@@ -50,6 +52,7 @@ impl DataHandler {
         .expect("Failed to load CLIP")
     }
 
+    #[expensive_log]
     pub async fn tokenizer(&self, data: &str) -> anyhow::Result<Vec<String>> {
         let data = data.to_lowercase();
         // 匹配 STOP_WORDS 中的所有单词
@@ -73,10 +76,12 @@ impl DataHandler {
         Ok(deduplicate(tokens))
     }
 
+    #[expensive_log]
     pub async fn get_text_embedding(&self, data: &str) -> anyhow::Result<Vec<f32>> {
         Ok(self.clip.get_text_embedding(data).await?.to_vec())
     }
 
+    #[expensive_log]
     pub async fn get_image_embedding(&self, data: &[u8]) -> anyhow::Result<Vec<f32>> {
         let image = image::load_from_memory(data)?;
         Ok(self
@@ -88,6 +93,7 @@ impl DataHandler {
 }
 
 impl DataHandler {
+    #[expensive_log]
     async fn text_input_data_to_model(&self, input: &TextInputData) -> anyhow::Result<TextModel> {
         let vector = self.get_text_embedding(input.0.as_str()).await?;
         let en_data  = translate_into_english(input.0.as_str()).await?;
@@ -100,6 +106,7 @@ impl DataHandler {
         })
     }
 
+    #[expensive_log]
     async fn image_input_data_to_model(
         &self,
         input: &ImageInputData,
@@ -107,11 +114,9 @@ impl DataHandler {
         let prompt = image_to_prompt(input.data.as_slice()).await?;
         let image = image::load_from_memory(input.data.as_slice())?;
         let vector = self
-            .clip
-            .get_image_embedding_from_image(&image.to_rgb8())
+            .get_image_embedding(&image.to_rgb8())
             .await?;
         let prompt_vector = self
-            .clip
             .get_text_embedding(prompt.as_str())
             .await?
             .to_vec();
@@ -123,6 +128,7 @@ impl DataHandler {
         })
     }
 
+    #[expensive_log]
     async fn item_input_data_to_model(&self, input: ItemInputData) -> anyhow::Result<ItemModel> {
         let text_future = input
             .text
@@ -144,6 +150,7 @@ impl DataHandler {
         })
     }
 
+    #[expensive_log]
     pub async fn handle_input_data(&self, input_data: InputData) -> anyhow::Result<DataModel> {
         match input_data {
             InputData::Text(input) => {

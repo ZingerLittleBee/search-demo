@@ -25,6 +25,8 @@ use surrealdb::{
     Surreal,
 };
 use tracing::debug;
+use tracing::{info, instrument};
+use track_macro::expensive_log;
 
 #[derive(Clone)]
 pub struct DB {
@@ -65,6 +67,7 @@ impl DB {
 
 // 📖 入库实现
 impl DB {
+    #[expensive_log]
     pub async fn insert_text(&self, input: TextModel) -> anyhow::Result<()> {
         let mut format_input = input;
         format_input.data = escape_single_quotes(format_input.data.as_str());
@@ -83,6 +86,7 @@ impl DB {
         Ok(())
     }
 
+    #[expensive_log]
     pub async fn insert_image(&self, input: ImageModel) -> anyhow::Result<()> {
         let mut format_input = input;
         format_input.prompt = escape_single_quotes(format_input.prompt.as_str());
@@ -101,6 +105,7 @@ impl DB {
         Ok(())
     }
 
+    #[expensive_log]
     pub async fn insert_item(&self, input: ItemModel) -> anyhow::Result<()> {
         let mut create_text_sql_vec = vec![];
         let mut create_image_sql_vec = vec![];
@@ -176,6 +181,7 @@ impl DB {
 
 // 🔍 全文搜索实现
 impl DB {
+    #[expensive_log]
     pub async fn full_text_search(
         &self,
         data: Vec<String>,
@@ -195,7 +201,7 @@ impl DB {
                 "SELECT id, {} FROM {} WHERE {};",
                 search_scores.join(", "),
                 table.table_name(),
-                where_clauses.join(" AND ")
+                where_clauses.join(" OR ")
             );
             debug!("full-text search sql: {}", sql);
 
@@ -223,6 +229,7 @@ impl DB {
 
 // 🔍 向量搜索实现
 impl DB {
+    #[expensive_log]
     pub async fn vector_search(
         &self,
         data: Vec<f32>,

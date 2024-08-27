@@ -3966,6 +3966,7 @@ dependencies = [
  "tower",
  "tracing",
  "tracing-subscriber",
+ "track-macro",
  "url",
 ]
 
@@ -5014,6 +5015,14 @@ dependencies = [
  "tracing",
  "tracing-core",
  "tracing-log",
+]
+
+[[package]]
+name = "track-macro"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn 2.0.72",
 ]
 
 [[package]]
