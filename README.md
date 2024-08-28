@@ -28,6 +28,9 @@ cp .env.example .env
 bash scripts/download-models.sh
 ```
 
+### mock 数据
+`scripts/mock.sh`
+
 ## SurrealDB 使用示例
 ```sql
 -- 创建一个 id 为 'text:aaa' 的 text 记录
