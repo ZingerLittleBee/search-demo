@@ -43,7 +43,7 @@ DEFINE INDEX IF NOT EXISTS idx_image_vector_hnsw_d512 ON image FIELDS vector HNS
 
 -- 定义分词器
 -- https://github.com/surrealdb/surrealdb/issues/2850
-DEFINE ANALYZER IF NOT EXISTS mixed_analyzer TOKENIZERS JIEBA, blank, class, punct FILTERS lowercase, ascii, snowball(english);
+DEFINE ANALYZER IF NOT EXISTS mixed_analyzer TOKENIZERS blank, class, punct FILTERS lowercase, ascii, snowball(english);
 
 -- 定义索引
 DEFINE INDEX IF NOT EXISTS mixed_index_text_data ON text FIELDS data SEARCH ANALYZER mixed_analyzer BM25 HIGHLIGHTS;

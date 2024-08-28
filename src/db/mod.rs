@@ -198,7 +198,7 @@ impl DB {
                 data.iter().enumerate().map(param_sql).unzip();
 
             let sql = format!(
-                "SELECT id, {} FROM {} WHERE {};",
+                "SELECT id, {} FROM {} WHERE {} LIMIT 100;",
                 search_scores.join(", "),
                 table.table_name(),
                 where_clauses.join(" OR ")
@@ -241,7 +241,7 @@ impl DB {
             async move {
                 let mut res = self
                     .client
-                    .query(format!("SELECT id, vector::distance::knn() AS distance FROM {} WHERE {} {} $vector ORDER BY distance;", v.table_name(), v.column_name(), range))
+                    .query(format!("SELECT id, vector::distance::knn() AS distance FROM {} WHERE {} {} $vector ORDER BY distance LIMIT 100;", v.table_name(), v.column_name(), range))
                     .bind(("vector", data))
                     .await?;
                 let res: Vec<VectorSearchEntity> = res.take(0)?;
@@ -410,6 +410,10 @@ mod test {
     use dotenvy::dotenv;
     use rand::Rng;
     use tracing_subscriber::EnvFilter;
+    use track_macro::expensive_log;
+    use crate::db::DB;
+    use futures::future::join_all;
+    use futures_util::{stream, StreamExt};
 
     async fn setup() -> crate::db::DB {
         dotenv().ok();
@@ -615,5 +619,64 @@ mod test {
         let res = db.select_by_id(ids).await.unwrap();
         println!("res: {:?}", res.iter().map(|r| r.id()).collect::<Vec<_>>());
         println!("res len: {}", res.len())
+    }
+
+    #[tokio::test]
+    async fn test_batch() {
+        dotenv().ok();
+        tracing_subscriber::fmt()
+            .with_env_filter(EnvFilter::from_default_env())
+            .init();
+
+        let search = |db: DB| async move {
+            let start = std::time::Instant::now();
+            db.client.query("SELECT id, search::score(0), search::score(1) AS score_1 FROM text WHERE data @0@ 'hello' OR data @1@ 'world' limit 100;").await.unwrap();
+            // db.client.query("SELECT id, search::score(0) FROM image WHERE prompt @0@ 'image';").await.unwrap();
+            // db.client.query("SELECT id FROM text WHERE data @0@ 'hello';").await.unwrap();
+            let elapsed = start.elapsed().as_millis();
+            println!("(took {} ms)", elapsed);
+        };
+
+        println!("1 个");
+        let dbs = join_all((0..1).map(|_| DB::new()).collect::<Vec<_>>()).await;
+        let search_futures: Vec<_> = dbs.into_iter().map(|db| search(db)).collect();
+        let _ = join_all(search_futures).await;
+
+        println!("2 个");
+        let dbs = join_all((0..2).map(|_| DB::new()).collect::<Vec<_>>()).await;
+        let search_futures: Vec<_> = dbs.into_iter().map(|db| search(db)).collect();
+        let _ = join_all(search_futures).await;
+
+        println!("4 个");
+        let dbs = join_all((0..4).map(|_| DB::new()).collect::<Vec<_>>()).await;
+        let search_futures: Vec<_> = dbs.into_iter().map(|db| search(db)).collect();
+        let _ = join_all(search_futures).await;
+
+        println!("10 个");
+        let dbs = join_all((0..10).map(|_| DB::new()).collect::<Vec<_>>()).await;
+        let search_futures: Vec<_> = dbs.into_iter().map(|db| search(db)).collect();
+        let _ = join_all(search_futures).await;
+
+        println!("20 个");
+        let dbs = join_all((0..20).map(|_| DB::new()).collect::<Vec<_>>()).await;
+        let search_futures: Vec<_> = dbs.into_iter().map(|db| search(db)).collect();
+        let _ = join_all(search_futures).await;
+    }
+
+    #[tokio::test]
+    async fn test_batch_add() {
+        let db = setup().await;
+        for i in (0..10000) {
+            let text = crate::model::TextModel {
+                data: format!("Hello, World!{}", i),
+                vector: gen_vector(),
+                en_data: format!("Hello, World!{}", i),
+                en_vector: gen_vector()
+            };
+            let start = std::time::Instant::now();
+            db.insert_text(text).await.unwrap();
+            let elapsed = start.elapsed().as_millis();
+            println!("(insert text took {} ms)", elapsed);
+        }
     }
 }
