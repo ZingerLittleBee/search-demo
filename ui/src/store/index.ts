@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import {SearchResult} from "@/types.ts";
+import {SearchResults} from "@/types.ts";
 
 export enum ActionType {
   Add,
@@ -7,13 +7,13 @@ export enum ActionType {
 }
 
 type State = {
-  resp?: SearchResult;
+  resp: SearchResults;
   action: ActionType;
   isLoading: boolean
 };
 
 type Action = {
-  setResp: (resp?: SearchResult) => void;
+  setResp: (resp: SearchResults) => void;
   setAction: (action: ActionType) => void;
   setIsLoading: (isLoading: boolean) => void;
 };
@@ -21,8 +21,9 @@ type Action = {
 type Store = State & Action;
 
 const useStore = create<Store>()((set) => ({
+  resp: [],
   action: ActionType.Search,
-  setResp: (resp?: SearchResult) => set(() => ({ resp })),
+  setResp: (resp?: SearchResults) => set(() => ({ resp })),
   setAction: (action: ActionType) => set(() => ({ action })),
     isLoading: false,
     setIsLoading: (isLoading: boolean) => set(() => ({ isLoading }))

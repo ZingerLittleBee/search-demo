@@ -1,10 +1,10 @@
-import {Result, SearchResult} from "@/types.ts";
+import {Result} from "@/types.ts";
 import {toast} from "sonner";
 import useStore from "@/store";
 
 export default function useAdd() {
-    const { setIsLoading } = useStore() 
-    
+    const { setIsLoading } = useStore()
+
     const addText = async (text: string): Promise<void> => {
         setIsLoading(true)
         try {
@@ -28,7 +28,7 @@ export default function useAdd() {
             setIsLoading(false)
         }
     }
-    
+
     const addImage = async (url: string): Promise<void> => {
         setIsLoading(true)
         try {
@@ -39,7 +39,7 @@ export default function useAdd() {
                 },
                 body: JSON.stringify({ url })
             })
-            const result: Result<SearchResult> = await resp.json()
+            const result: Result = await resp.json()
 
             if (result.message) {
                 toast(result.message)
@@ -53,7 +53,7 @@ export default function useAdd() {
             setIsLoading(false)
         }
     }
-    
+
     const addItem = async (item: { text: string[]; image: string[] }): Promise<void> => {
         const { text, image } = item
         setIsLoading(true)
@@ -78,7 +78,7 @@ export default function useAdd() {
             setIsLoading(false)
         }
     }
-    
+
     return {
         addText,
         addImage,

@@ -31,7 +31,7 @@ pub struct SearchWithItemParam {
 pub async fn search_with_text(
     State(state): State<Arc<AppState>>,
     Json(input): Json<SearchWithTextParam>,
-) -> HTTPResult<SelectResultVo> {
+) -> HTTPResult<Vec<SelectResultVo>> {
     let search_data = model::search::SearchData::Text(input.text.into());
     let result = state.search(search_data).await;
     match result {
@@ -55,7 +55,7 @@ pub async fn search_with_text(
 pub async fn search_with_image(
     State(state): State<Arc<AppState>>,
     Json(input): Json<SearchWithImageParam>,
-) -> HTTPResult<SelectResultVo> {
+) -> HTTPResult<Vec<SelectResultVo>> {
     let image_search_data = match ImageSearchData::from_url(&input.url).await {
         Ok(data) => data,
         Err(e) => {
@@ -91,7 +91,7 @@ pub async fn search_with_image(
 pub async fn search_with_item(
     State(state): State<Arc<AppState>>,
     Json(input): Json<SearchWithItemParam>,
-) -> HTTPResult<SelectResultVo> {
+) -> HTTPResult<Vec<SelectResultVo>> {
     let search_text_vec = input
         .text
         .iter()

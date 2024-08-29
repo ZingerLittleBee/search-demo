@@ -1,14 +1,14 @@
-use std::env;
-use std::io::Cursor;
+use crate::ai::ResponseData;
+use crate::constant::OLLAMA_ENDPOINT;
 use base64::engine::general_purpose;
 use base64::Engine;
 use image::ImageReader;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
+use std::env;
+use std::io::Cursor;
 use tokio::fs::File;
 use tokio::io::AsyncReadExt;
-use crate::ai::ResponseData;
-use crate::constant::OLLAMA_ENDPOINT;
 
 #[derive(Serialize)]
 struct RequestData {
@@ -17,7 +17,6 @@ struct RequestData {
     stream: bool,
     images: Vec<String>,
 }
-
 
 pub async fn image_to_prompt(image: impl AsRef<[u8]>) -> anyhow::Result<String> {
     let mut reader = ImageReader::new(Cursor::new(image)).with_guessed_format()?;
@@ -30,7 +29,7 @@ pub async fn image_to_prompt(image: impl AsRef<[u8]>) -> anyhow::Result<String> 
     let client = Client::new();
     let request_data = RequestData {
         model: "llava".to_string(),
-        prompt: "Describe the main objects, scene, and emotions in the image. Provide as much context as possible to help the model understand the key elements of the image.".to_string(),
+        prompt: "Use ten keywords to describe the content of the image, separating keywords with semicolon".to_string(),
         stream: false,
         images: vec![general_purpose::STANDARD.encode(&png_data)],
     };
@@ -68,9 +67,15 @@ mod test {
     #[tokio::test]
     async fn test_image_to_prompt() {
         dotenv().ok();
-        let image1 = crate::ai::image_to_prompt::read_image_from_path("test/image.png").await.unwrap();
-        let image2 = crate::ai::image_to_prompt::read_image_from_path("test/img2.jpeg").await.unwrap();
-        let image3 = crate::ai::image_to_prompt::read_image_from_path("test/thumbnail.png").await.unwrap();
+        let image1 = crate::ai::image_to_prompt::read_image_from_path("test/image.png")
+            .await
+            .unwrap();
+        let image2 = crate::ai::image_to_prompt::read_image_from_path("test/img2.jpeg")
+            .await
+            .unwrap();
+        let image3 = crate::ai::image_to_prompt::read_image_from_path("test/thumbnail.png")
+            .await
+            .unwrap();
 
         println!(
             "image1 to prompt: {}",

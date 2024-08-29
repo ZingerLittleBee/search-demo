@@ -1,11 +1,11 @@
 import { toast } from "sonner"
 import useStore from "@/store";
-import {Result, SearchResult} from "@/types.ts";
+import {Result, SearchResults} from "@/types.ts";
 
 export default function useSearch() {
     const { setIsLoading } = useStore()
 
-    const searchWithText = async (text: string): Promise<SearchResult | undefined> => {
+    const searchWithText = async (text: string): Promise<SearchResults> => {
         setIsLoading(true)
         try {
             const resp = await fetch('/api/search/text', {
@@ -15,12 +15,12 @@ export default function useSearch() {
                 },
                 body: JSON.stringify({ text })
             })
-            const result: Result<SearchResult> = await resp.json()
+            const result: Result<SearchResults> = await resp.json()
 
             if (result.message) {
                 toast(result.message)
                 setIsLoading(false)
-                return
+                return []
             }
 
             setIsLoading(false)
@@ -30,9 +30,10 @@ export default function useSearch() {
             toast(`Failed to search with text: ${text}`)
             setIsLoading(false)
         }
+        return []
     }
 
-    const searchWithImage = async (url: string): Promise<SearchResult | undefined> => {
+    const searchWithImage = async (url: string): Promise<SearchResults> => {
         setIsLoading(true)
         try {
             const resp = await fetch('/api/search/image', {
@@ -42,12 +43,12 @@ export default function useSearch() {
                 },
                 body: JSON.stringify({ url })
             })
-            const result: Result<SearchResult> = await resp.json()
+            const result: Result<SearchResults> = await resp.json()
 
             if (result.message) {
                 toast(result.message)
                 setIsLoading(false)
-                return
+                return []
             }
 
             setIsLoading(false)
@@ -57,9 +58,10 @@ export default function useSearch() {
             toast(`Failed to search with image with url: ${url}`)
             setIsLoading(false)
         }
+        return []
     }
 
-    const searchWithItem = async (item: { text: string[]; image: string[] }): Promise<SearchResult | undefined> => {
+    const searchWithItem = async (item: { text: string[]; image: string[] }): Promise<SearchResults> => {
         const { text, image } = item
         setIsLoading(true)
         try {
@@ -70,12 +72,12 @@ export default function useSearch() {
                 },
                 body: JSON.stringify({ text, image })
             })
-            const result: Result<SearchResult> = await resp.json()
+            const result: Result<SearchResults> = await resp.json()
 
             if (result.message) {
                 toast(result.message)
                 setIsLoading(false)
-                return
+                return []
             }
 
             setIsLoading(false)
@@ -85,6 +87,7 @@ export default function useSearch() {
             toast(`Failed to search with item: ${item}`)
             setIsLoading(false)
         }
+        return []
     }
 
     return {

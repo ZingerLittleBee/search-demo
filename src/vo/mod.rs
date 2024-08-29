@@ -21,10 +21,19 @@ pub struct ItemVo {
     pub image: Vec<ImageVo>,
 }
 
+// #[derive(Debug, Serialize)]
+// #[serde(rename_all = "lowercase")]
+// pub struct SelectResultVo {
+//     pub text: Vec<TextVo>,
+//     pub image: Vec<ImageVo>,
+//     pub item: Vec<ItemVo>,
+// }
+
 #[derive(Debug, Serialize)]
+#[serde(tag = "type", content = "value")]
 #[serde(rename_all = "lowercase")]
-pub struct SelectResultVo {
-    pub text: Vec<TextVo>,
-    pub image: Vec<ImageVo>,
-    pub item: Vec<ItemVo>,
+pub enum SelectResultVo {
+    Text(TextVo),
+    Image(ImageVo),
+    Item(ItemVo),
 }

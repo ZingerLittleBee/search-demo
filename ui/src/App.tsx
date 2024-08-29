@@ -1,24 +1,20 @@
 import {Card, CardContent, CardDescription, CardHeader, CardTitle,} from "./components/ui/card";
 import {Tabs, TabsContent, TabsList, TabsTrigger} from "./components/ui/tabs";
 import {useMemo} from "react";
-import {Accordion, AccordionContent, AccordionItem, AccordionTrigger,} from "./components/ui/accordion";
-import {cn} from "@/lib/utils.ts";
 import ImageWidget from "@/components/image.tsx";
 import useStore, {ActionType} from "./store";
 import {LoaderCircle} from "lucide-react";
 import AddWidget from "@/components/action.tsx";
 import TextWidget from "@/components/text.tsx";
-import Gallery from "@/components/gallery.tsx";
 import ItemWidget from "./components/item";
+import ResponseWidget from "@/components/resp.tsx";
 
 function App() {
   const { resp, isLoading, action } = useStore();
-  
+
   const isSearch = useMemo(() => action === ActionType.Search, [action]);
 
-  const hasText = useMemo(() => (resp?.text ?? []).length > 0, [resp?.text]);
-  const hasImage = useMemo(() => (resp?.image ?? []).length > 0, [resp?.image]);
-  const hasItem = useMemo(() => (resp?.item ?? []).length > 0, [resp?.item]);
+  const hasResp = useMemo(() => resp.length > 0, [resp.length]);
 
   return (
       <div className="relative w-screen h-screen">
@@ -65,62 +61,12 @@ function App() {
               </Card>
             </TabsContent>
           </Tabs>
-          <div className="max-w-2xl w-full">
-            <p className="text-muted-foreground">响应</p>
-            <Accordion type="multiple" className="w-full">
-              <AccordionItem value="text" disabled={!hasText}>
-                <AccordionTrigger
-                    className={cn(!hasText && "line-through text-muted-foreground")}
-                >
-                  文本
-                </AccordionTrigger>
-                <AccordionContent className="space-y-4">
-                  {resp?.text.map((item, index) => (
-                      <Card key={index}>
-                        <CardHeader>
-                          <CardTitle>{item.id}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">{item.data}</CardContent>
-                      </Card>
-                  ))}
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="image" disabled={!hasImage}>
-                <AccordionTrigger
-                    className={cn(!hasImage && "line-through text-muted-foreground")}
-                >
-                  图片
-                </AccordionTrigger>
-                <AccordionContent className="flex justify-center">
-                  <Gallery images={resp?.image ?? []}/>
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="item" disabled={!hasItem}>
-                <AccordionTrigger
-                    className={cn(!hasItem && "line-through text-muted-foreground")}
-                >
-                  组合
-                </AccordionTrigger>
-                <AccordionContent className="space-y-4">
-                  {resp?.item.map((item, index) => (
-                      <Card key={index}>
-                        <CardHeader>
-                          <CardTitle>{item.id}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2 flex flex-col items-center">
-                          {item.text.map((text, index) => (
-                              <div key={index}>{text.data}</div>
-                          ))}
-                          {
-                            item.image.length > 0 && <Gallery images={item.image}/>
-                          }
-                        </CardContent>
-                      </Card>
-                  ))}
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
+          {
+              hasResp && <div className="max-w-2xl w-full">
+                <p className="text-muted-foreground">响应</p>
+                <ResponseWidget/>
+              </div>
+          }
         </div>
         {
             isLoading && <div className="z-[100] fixed top-0 w-full h-full bg-black/80 cursor-progress">

@@ -14,11 +14,18 @@ export type ItemResult = {
     image: ImageResult[]
 }
 
-export type SearchResult = {
-    text: TextResult[]
-    image: ImageResult[]
-    item: ItemResult[]
+export type SearchResultItem = {
+    type: 'text'
+    value: TextResult
+} | {
+    type: 'image'
+    value: ImageResult
+} | {
+    type: 'item'
+    value: ItemResult
 }
+
+export type SearchResults = SearchResultItem[]
 
 export type Result<T = any> = {
     data: T

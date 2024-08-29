@@ -12,10 +12,6 @@ use crate::rank::Rank;
 use crate::vo::SelectResultVo;
 use futures_util::{stream, StreamExt};
 use itertools::Itertools;
-use minio::s3::args::{BucketExistsArgs, MakeBucketArgs};
-use minio::s3::client::{Client, ClientBuilder};
-use minio::s3::creds::StaticProvider;
-use minio::s3::http::BaseUrl;
 use std::env;
 use tracing::{error, info};
 use track_macro::expensive_log;
@@ -53,7 +49,7 @@ impl AppState {
     /// 1. 文本搜索 -> 分词全文搜索和向量搜索
     /// 2. 图片搜索 -> prompt（文本搜索流程），图片向量搜索
     /// 3. item 搜索 -> 文本搜索和图片搜索
-    pub async fn search(&self, input: SearchData) -> anyhow::Result<SelectResultVo> {
+    pub async fn search(&self, input: SearchData) -> anyhow::Result<Vec<SelectResultVo>> {
         match self.data_handler.handle_search_data(input).await? {
             SearchModel::Text(text) => {
                 let vector = self
@@ -71,7 +67,7 @@ impl AppState {
                     .collect();
 
                 let select_result = self.db.select_by_id(search_ids).await?;
-                Ok(select_result.into())
+                Ok(select_result.into_iter().map(|s| s.into()).collect())
             }
             SearchModel::Image(image) => {
                 // prompt 全文搜索
@@ -105,7 +101,7 @@ impl AppState {
                     .select_by_id(search_ids.into_iter().unique().map(|s| s.id).collect())
                     .await?;
 
-                Ok(select_result.into())
+                Ok(select_result.into_iter().map(|s| s.into()).collect())
             }
             SearchModel::Item(item) => {
                 let mut full_text_result = vec![];
@@ -169,7 +165,7 @@ impl AppState {
                     .select_by_id(search_ids.into_iter().unique().map(|s| s.id).collect())
                     .await?;
 
-                Ok(select_result.into())
+                Ok(select_result.into_iter().map(|s| s.into()).collect())
             }
         }
     }

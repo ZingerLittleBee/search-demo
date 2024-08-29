@@ -97,18 +97,12 @@ impl From<ItemEntity> for ItemVo {
     }
 }
 
-impl From<Vec<SelectResultEntity>> for SelectResultVo {
-    fn from(value: Vec<SelectResultEntity>) -> Self {
-        let mut text = vec![];
-        let mut image = vec![];
-        let mut item = vec![];
-        for entity in value {
-            match entity {
-                SelectResultEntity::Text(text_entity) => text.push(text_entity.into()),
-                SelectResultEntity::Image(image_entity) => image.push(image_entity.into()),
-                SelectResultEntity::Item(item_entity) => item.push(item_entity.into()),
-            }
+impl From<SelectResultEntity> for SelectResultVo {
+    fn from(value: SelectResultEntity) -> Self {
+        match value {
+            SelectResultEntity::Text(text) => SelectResultVo::Text(TextVo::from(text)),
+            SelectResultEntity::Image(image) => SelectResultVo::Image(ImageVo::from(image)),
+            SelectResultEntity::Item(item) => SelectResultVo::Item(ItemVo::from(item)),
         }
-        SelectResultVo { text, image, item }
     }
 }
