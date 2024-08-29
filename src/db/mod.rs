@@ -19,6 +19,7 @@ use crate::utils::{deduplicate, escape_single_quotes};
 use futures::future::join_all;
 use futures_util::{stream, StreamExt};
 use std::env;
+use anyhow::bail;
 use surrealdb::{
     engine::remote::ws::{Client, Ws},
     opt::auth::Root,
@@ -186,6 +187,9 @@ impl DB {
         &self,
         data: Vec<String>,
     ) -> anyhow::Result<Vec<FullTextSearchResult>> {
+        if data.is_empty() {
+            bail!("data is empty in full text search");
+        }
         let futures = FULL_TEXT_SEARCH_TABLE.iter().map(|table| {
             let param_sql = |data: (usize, &String)| -> (String, String) {
                 (
@@ -235,6 +239,9 @@ impl DB {
         data: Vec<f32>,
         range: Option<&str>,
     ) -> anyhow::Result<Vec<VectorSearchResult>> {
+        if data.is_empty() {
+            bail!("data is empty in vector search");
+        }
         let range = range.unwrap_or_else(|| "<|10,40|>");
         let futures = VECTOR_SEARCH_TABLE.map(|v| {
             let data = data.clone();

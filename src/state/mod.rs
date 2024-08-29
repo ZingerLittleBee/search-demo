@@ -57,6 +57,7 @@ impl AppState {
                     .get_text_embedding(text.data.as_str())
                     .await?;
                 let tokens = self.data_handler.tokenizer(text.data.as_str()).await?;
+                info!("search tokens: {:?}", tokens);
                 let full_text_result = self.db.full_text_search(tokens).await?;
                 let vector_result = self.db.vector_search(vector, None).await?;
 
