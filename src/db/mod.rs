@@ -1,6 +1,6 @@
 mod entity;
-mod sql;
 pub mod s3;
+mod sql;
 
 use crate::constant::{
     DATABASE_HOST, DATABASE_NAME, DATABASE_NS, DATABASE_PASSWORD, DATABASE_PORT, DATABASE_USER,
@@ -268,48 +268,63 @@ impl DB {
 // 数据查询
 impl DB {
     /// ids: 只包含 text 和 image 表的 ID
+    /// ids 是去重的
+    /// 查询出的结果顺序是和 ids 一致的
     pub async fn select_by_id(&self, ids: Vec<ID>) -> anyhow::Result<Vec<SelectResultEntity>> {
-        let mut text_ids = vec![];
-        let mut image_ids = vec![];
-        let mut item_ids = vec![];
-
-        ids.iter().for_each(|id| match id.tb() {
-            TB::Text => text_ids.push(id.id()),
-            TB::Image => image_ids.push(id.id()),
-            _ => {}
-        });
-
-        let outs = text_ids.iter().chain(image_ids.iter()).cloned().collect();
-
-        // 查询被 contain 的 text、image
-        let relation = self.select_relation_by_out(outs).await?;
-
-        let mut contain_by_item_ids = vec![];
-
-        relation.iter().for_each(|r| {
-            item_ids.push(r.in_id());
-            contain_by_item_ids.push(r.out_id());
-        });
-
-        text_ids = text_ids
+        let mut backtrack = vec![];
+        stream::iter(ids)
+            .then(|id| async move {
+                let mut res = vec![];
+                let relation = self
+                    .select_relation_by_out(vec![id.id()])
+                    .await?
+                    .into_iter()
+                    .map(|r| r.in_id())
+                    .collect::<Vec<_>>();
+                if !relation.is_empty() {
+                    // 有 contain 关系的情况
+                    let item = self.select_item(deduplicate(relation)).await?;
+                    res.push(
+                        item.into_iter()
+                            .map(SelectResultEntity::Item)
+                            .collect::<Vec<SelectResultEntity>>(),
+                    );
+                } else {
+                    // 没有 contain 关系的情况
+                    match id.tb() {
+                        TB::Text => {
+                            let text = self.select_text(vec![id.id()]).await?;
+                            res.push(
+                                text.into_iter()
+                                    .map(SelectResultEntity::Text)
+                                    .collect::<Vec<SelectResultEntity>>(),
+                            );
+                        }
+                        TB::Image => {
+                            let image = self.select_image(vec![id.id()]).await?;
+                            res.push(
+                                image
+                                    .into_iter()
+                                    .map(SelectResultEntity::Image)
+                                    .collect::<Vec<SelectResultEntity>>(),
+                            );
+                        }
+                        _ => {}
+                    }
+                }
+                Ok::<Vec<SelectResultEntity>, anyhow::Error>(res.into_iter().flatten().collect())
+            })
+            .collect::<Vec<_>>()
+            .await
             .into_iter()
-            .filter(|id| !contain_by_item_ids.contains(&id.to_string()))
-            .collect();
+            .for_each(|res| match res {
+                Ok(res) => {
+                    backtrack.push(res);
+                }
+                _ => {}
+            });
 
-        image_ids = image_ids
-            .into_iter()
-            .filter(|id| !contain_by_item_ids.contains(&id.to_string()))
-            .collect();
-
-        let text = self.select_text(deduplicate(text_ids)).await?;
-        let image = self.select_image(deduplicate(image_ids)).await?;
-        let item = self.select_item(deduplicate(item_ids)).await?;
-
-        let mut res = vec![];
-        res.extend(text.into_iter().map(SelectResultEntity::Text));
-        res.extend(image.into_iter().map(SelectResultEntity::Image));
-        res.extend(item.into_iter().map(SelectResultEntity::Item));
-        Ok(res)
+        Ok(backtrack.into_iter().flatten().collect())
     }
 
     async fn select_relation_by_out(
@@ -342,17 +357,27 @@ impl DB {
     }
 
     async fn select_text(&self, ids: Vec<impl AsRef<str>>) -> anyhow::Result<Vec<TextEntity>> {
-        let mut resp = self
-            .client
-            .query(format!(
-                "SELECT * FROM text WHERE id in [{}];",
-                ids.iter()
-                    .map(|i| i.as_ref())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ))
-            .await?;
-        Ok(resp.take::<Vec<TextEntity>>(0)?)
+        let mut result = vec![];
+
+        stream::iter(ids)
+            .then(|id| async move {
+                let mut resp = self
+                    .client
+                    .query(format!("SELECT * FROM {};", id.as_ref()))
+                    .await?;
+                let result = resp.take::<Vec<TextEntity>>(0)?;
+                Ok::<_, anyhow::Error>(result)
+            })
+            .collect::<Vec<_>>()
+            .await
+            .into_iter()
+            .for_each(|res| match res {
+                Ok(image) => {
+                    result.push(image);
+                }
+                _ => {}
+            });
+        Ok(result.into_iter().flatten().collect())
     }
 
     async fn select_image(&self, ids: Vec<impl AsRef<str>>) -> anyhow::Result<Vec<ImageEntity>> {
@@ -406,14 +431,12 @@ impl DB {
 }
 
 mod test {
-    use crate::model::ItemModel;
     use dotenvy::dotenv;
+    use futures_util::future::join_all;
     use rand::Rng;
     use tracing_subscriber::EnvFilter;
-    use track_macro::expensive_log;
     use crate::db::DB;
-    use futures::future::join_all;
-    use futures_util::{stream, StreamExt};
+    use crate::model::ItemModel;
 
     async fn setup() -> crate::db::DB {
         dotenv().ok();
@@ -436,7 +459,7 @@ mod test {
             data: "Hello, World!".to_string(),
             vector: gen_vector(),
             en_data: "Hello, World!".to_string(),
-            en_vector: gen_vector()
+            en_vector: gen_vector(),
         };
         db.insert_text(text).await.unwrap();
         let res = db
@@ -476,13 +499,13 @@ mod test {
                     data: "Hello, World!".to_string(),
                     vector: handler.get_text_embedding("Hello, World!").await.unwrap(),
                     en_data: "Hello, World!".to_string(),
-                    en_vector: gen_vector()
+                    en_vector: gen_vector(),
                 },
                 crate::model::TextModel {
                     data: "Hello, World2!".to_string(),
                     vector: handler.get_text_embedding("Hello, World2!").await.unwrap(),
                     en_data: "Hello, World!".to_string(),
-                    en_vector: gen_vector()
+                    en_vector: gen_vector(),
                 },
             ],
             image: vec![
@@ -671,7 +694,7 @@ mod test {
                 data: format!("Hello, World!{}", i),
                 vector: gen_vector(),
                 en_data: format!("Hello, World!{}", i),
-                en_vector: gen_vector()
+                en_vector: gen_vector(),
             };
             let start = std::time::Instant::now();
             db.insert_text(text).await.unwrap();

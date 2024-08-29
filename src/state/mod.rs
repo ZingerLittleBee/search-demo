@@ -66,6 +66,8 @@ impl AppState {
                     .map(|s| s.id)
                     .collect();
 
+                info!("search ids: {:?}", search_ids);
+                
                 let select_result = self.db.select_by_id(search_ids).await?;
                 Ok(select_result.into_iter().map(|s| s.into()).collect())
             }

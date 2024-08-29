@@ -2,6 +2,7 @@ use crate::model::search::full_text::FullTextSearchResult;
 use crate::model::search::vector::VectorSearchResult;
 use crate::model::search::ID;
 use std::collections::HashMap;
+use tracing::info;
 
 pub struct Rank;
 
@@ -59,13 +60,13 @@ impl Rank {
     ) -> anyhow::Result<Vec<RankResult>> {
         let full_text_rank = Rank::full_text_rank(full_text_data, None)?;
         let vector_rank = Rank::vector_rank(vector_data, None)?;
-        
-        println!("full_text_rank: {:?}", full_text_rank);
-        println!("vector_rank: {:?}", vector_rank);
+
+        info!("full_text_rank: {:?}", full_text_rank);
+        info!("vector_rank: {:?}", vector_rank);
         
         let mut rank_result = Rank::rrf(vec![full_text_rank, vector_rank], None);
         
-        println!("rank_result: {:?}", rank_result);
+        info!("rank_result: {:?}", rank_result);
 
         let drain = std::cmp::min(drain.unwrap_or(rank_result.len()), rank_result.len());
 
