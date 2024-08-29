@@ -112,9 +112,8 @@ impl DataHandler {
         input: &ImageInputData,
     ) -> anyhow::Result<ImageModel> {
         let prompt = image_to_prompt(input.data.as_slice()).await?;
-        let image = image::load_from_memory(input.data.as_slice())?;
         let vector = self
-            .get_image_embedding(&image.to_rgb8())
+            .get_image_embedding(input.data.as_slice())
             .await?;
         let prompt_vector = self
             .get_text_embedding(prompt.as_str())
